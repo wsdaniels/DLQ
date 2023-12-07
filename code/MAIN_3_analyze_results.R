@@ -11,10 +11,15 @@ rm(list = ls())
 library(lubridate)
 library(scales)
 # library(circular)
+library(rstudioapi)
 
 
 # START USER INPUT
 #---------------------------------------------------------------------------
+
+if (commandArgs()[1] == "RStudio"){
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+}
 
 # Directory to save plots
 save.dir <- '../'
@@ -1542,13 +1547,13 @@ for (i in which(identified.leaks)){
   wd.x <- cos(these.wd)
   wd.y <- sin(these.wd)
   wd.identified.events[count] <- atan2(mean(wd.y, na.rm = T), mean(wd.x, na.rm = T))
-  wd.sd.identified.events[count] <- var.circular(as.circular(these.wd,
-                                                             units = "radians",
-                                                             type = "angles",
-                                                             template = "none",
-                                                             zero = 0,
-                                                             rotation = "counter",
-                                                             modulo = "asis"), na.rm = T)
+  # wd.sd.identified.events[count] <- var.circular(as.circular(these.wd,
+  #                                                            units = "radians",
+  #                                                            type = "angles",
+  #                                                            template = "none",
+  #                                                            zero = 0,
+  #                                                            rotation = "counter",
+  #                                                            modulo = "asis"), na.rm = T)
   
   count <- count + 1
 }
@@ -1579,132 +1584,132 @@ y <- rate.est.ratios[this.mask]
 y <- ifelse(y<1, 1/y, y)
 
 
-
-png(paste0(save.dir, "dependence.png"),
-    res = 100, pointsize = 30, width = 1920, height = 1080*1.25)
-
-par(mfrow = c(3,2))
-par(mar = c(3.25,3.25,1,1))
-par(mgp = c(2.25, 0.75, 0))
-par(oma = c(0,0,0.25,0))
-
-
-xlim.vals <- range(leak.durations.identified.events[this.mask])
-
-plot(leak.durations.identified.events, true.rates.identified.events/1000,
-     col = these.col, pch = these.pch, cex = cex.val,
-     xlim = c(0, max(leak.durations.identified.events)),
-     ylab = "METEC Emission Rate [kg/hr]",
-     xlab = "METEC Emission Duration [hr]",
-     xpd = NA)
-
-rect(xleft = xlim.vals[1] - 0.25, ybottom = 0 - 0.05,
-     xright = xlim.vals[2] + 0.25, ytop = 1 + 0.25,
-     border = "black", lwd = 4,
-     xpd = NA)
-
-# legend("topright",
-#        legend = c("Est. within Factor of 2",
-#                   "Est. within Factor of 3",
-#                   "Est. outside Factor of 3",
-#                   "Quantification Unavailable"),
-#        col = c("forestgreen", "goldenrod2", "firebrick3", "black"),
-#        pch = c(16, 17, 15, 18),
-#        pt.cex = cex.val)
-
-plot(leak.durations.identified.events[this.mask], y,
-     xlim = xlim.vals,
-     ylim = c(1,ylim.max),
-     col = these.col[this.mask], pch = these.pch[this.mask], cex = cex.val,
-     ylab = "Abs(Factor Difference)",
-     xlab = "METEC Emission Duration [hr]")
-
-x <- leak.durations.identified.events[this.mask]
-
-cor.val <- cor(x,y, use = "complete.obs", method = "pearson")
-
-abline(lm(y~x), col = "magenta", lwd = 3)
-
-box(col = "black", lwd = 4)
-
-mtext(paste0("correlation = ", round(cor.val,2)),
-      adj = 0.025, cex = 0.8, line = -1.25)
-
-
-
-#####
-
-xlim.vals <- range(ws.identified.events[this.mask])
-
-plot(ws.identified.events, true.rates.identified.events/1000,
-     col = these.col, pch = these.pch, cex = cex.val,
-     xlim = c(0, max(ws.identified.events)),
-     ylab = "METEC Emission Rate [kg/hr]",
-     xlab = "Average Wind Speed During Event [m/s]",
-     xpd = NA)
-
-rect(xleft = xlim.vals[1] - 0.25, ybottom = 0 - 0.05,
-     xright = xlim.vals[2] + 0.25, ytop = 1 + 0.25,
-     border = "black", lwd = 4,
-     xpd = NA)
-
-plot(ws.identified.events[this.mask],  y,
-     xlim = xlim.vals,
-     ylim = c(1,ylim.max),
-     col = these.col[this.mask], pch = these.pch[this.mask], cex = cex.val,
-     ylab = "Abs(Factor Difference)",
-     xlab = "Average Wind Speed During Event [m/s]")
-
-box(col = "black", lwd = 4)
-
-x <- ws.identified.events[this.mask]
-
-cor.val <- cor(x,y, use = "complete.obs", method = "pearson")
-
-abline(lm(y~x), col = "magenta", lwd = 3)
-
-box(col = "black", lwd = 4)
-
-mtext(paste0("correlation = ", round(cor.val,2)),
-      adj = 0.025, cex = 0.8, line = -1.25)
-
-
-#####
-
-
-xlim.vals <- range(wd.sd.identified.events[this.mask])
-
-plot(wd.sd.identified.events, true.rates.identified.events/1000,
-     col = these.col, pch = these.pch, cex = cex.val,
-     xlim = c(0, 1),
-     ylab = "METEC Emission Rate [kg/hr]",
-     xlab = "Circular Variance of Wind Direction During Event",
-     xpd = NA)
-
-rect(xleft = xlim.vals[1] - 0.025, ybottom = 0 - 0.05,
-     xright = xlim.vals[2] + 0.025, ytop = 1 + 0.25,
-     border = "black", lwd = 4,
-     xpd = NA)
-
-plot(wd.sd.identified.events[this.mask], y,
-     xlim = xlim.vals,
-     ylim = c(1,ylim.max),
-     col = these.col[this.mask], pch = these.pch[this.mask], cex = cex.val,
-     ylab = "Abs(Factor Difference)",
-     xlab = "Circular Variance of Wind Direction During Event")
-
-box(col = "black", lwd = 4)
-
-x <- wd.sd.identified.events[this.mask]
-
-cor.val <- cor(x,y, use = "complete.obs", method = "pearson")
-
-abline(lm(y~x), col = "magenta", lwd = 3)
-
-box(col = "black", lwd = 4)
-
-mtext(paste0("correlation = ", round(cor.val,2)),
-      adj = 0.025, cex = 0.8, line = -1.25)
-
-
-dev.off()
+# 
+# png(paste0(save.dir, "dependence.png"),
+#     res = 100, pointsize = 30, width = 1920, height = 1080*1.25)
+# 
+# par(mfrow = c(3,2))
+# par(mar = c(3.25,3.25,1,1))
+# par(mgp = c(2.25, 0.75, 0))
+# par(oma = c(0,0,0.25,0))
+# 
+# 
+# xlim.vals <- range(leak.durations.identified.events[this.mask])
+# 
+# plot(leak.durations.identified.events, true.rates.identified.events/1000,
+#      col = these.col, pch = these.pch, cex = cex.val,
+#      xlim = c(0, max(leak.durations.identified.events)),
+#      ylab = "METEC Emission Rate [kg/hr]",
+#      xlab = "METEC Emission Duration [hr]",
+#      xpd = NA)
+# 
+# rect(xleft = xlim.vals[1] - 0.25, ybottom = 0 - 0.05,
+#      xright = xlim.vals[2] + 0.25, ytop = 1 + 0.25,
+#      border = "black", lwd = 4,
+#      xpd = NA)
+# 
+# # legend("topright",
+# #        legend = c("Est. within Factor of 2",
+# #                   "Est. within Factor of 3",
+# #                   "Est. outside Factor of 3",
+# #                   "Quantification Unavailable"),
+# #        col = c("forestgreen", "goldenrod2", "firebrick3", "black"),
+# #        pch = c(16, 17, 15, 18),
+# #        pt.cex = cex.val)
+# 
+# plot(leak.durations.identified.events[this.mask], y,
+#      xlim = xlim.vals,
+#      ylim = c(1,ylim.max),
+#      col = these.col[this.mask], pch = these.pch[this.mask], cex = cex.val,
+#      ylab = "Abs(Factor Difference)",
+#      xlab = "METEC Emission Duration [hr]")
+# 
+# x <- leak.durations.identified.events[this.mask]
+# 
+# cor.val <- cor(x,y, use = "complete.obs", method = "pearson")
+# 
+# abline(lm(y~x), col = "magenta", lwd = 3)
+# 
+# box(col = "black", lwd = 4)
+# 
+# mtext(paste0("correlation = ", round(cor.val,2)),
+#       adj = 0.025, cex = 0.8, line = -1.25)
+# 
+# 
+# 
+# #####
+# 
+# xlim.vals <- range(ws.identified.events[this.mask])
+# 
+# plot(ws.identified.events, true.rates.identified.events/1000,
+#      col = these.col, pch = these.pch, cex = cex.val,
+#      xlim = c(0, max(ws.identified.events)),
+#      ylab = "METEC Emission Rate [kg/hr]",
+#      xlab = "Average Wind Speed During Event [m/s]",
+#      xpd = NA)
+# 
+# rect(xleft = xlim.vals[1] - 0.25, ybottom = 0 - 0.05,
+#      xright = xlim.vals[2] + 0.25, ytop = 1 + 0.25,
+#      border = "black", lwd = 4,
+#      xpd = NA)
+# 
+# plot(ws.identified.events[this.mask],  y,
+#      xlim = xlim.vals,
+#      ylim = c(1,ylim.max),
+#      col = these.col[this.mask], pch = these.pch[this.mask], cex = cex.val,
+#      ylab = "Abs(Factor Difference)",
+#      xlab = "Average Wind Speed During Event [m/s]")
+# 
+# box(col = "black", lwd = 4)
+# 
+# x <- ws.identified.events[this.mask]
+# 
+# cor.val <- cor(x,y, use = "complete.obs", method = "pearson")
+# 
+# abline(lm(y~x), col = "magenta", lwd = 3)
+# 
+# box(col = "black", lwd = 4)
+# 
+# mtext(paste0("correlation = ", round(cor.val,2)),
+#       adj = 0.025, cex = 0.8, line = -1.25)
+# 
+# 
+# #####
+# 
+# 
+# xlim.vals <- range(wd.sd.identified.events[this.mask])
+# 
+# plot(wd.sd.identified.events, true.rates.identified.events/1000,
+#      col = these.col, pch = these.pch, cex = cex.val,
+#      xlim = c(0, 1),
+#      ylab = "METEC Emission Rate [kg/hr]",
+#      xlab = "Circular Variance of Wind Direction During Event",
+#      xpd = NA)
+# 
+# rect(xleft = xlim.vals[1] - 0.025, ybottom = 0 - 0.05,
+#      xright = xlim.vals[2] + 0.025, ytop = 1 + 0.25,
+#      border = "black", lwd = 4,
+#      xpd = NA)
+# 
+# plot(wd.sd.identified.events[this.mask], y,
+#      xlim = xlim.vals,
+#      ylim = c(1,ylim.max),
+#      col = these.col[this.mask], pch = these.pch[this.mask], cex = cex.val,
+#      ylab = "Abs(Factor Difference)",
+#      xlab = "Circular Variance of Wind Direction During Event")
+# 
+# box(col = "black", lwd = 4)
+# 
+# x <- wd.sd.identified.events[this.mask]
+# 
+# cor.val <- cor(x,y, use = "complete.obs", method = "pearson")
+# 
+# abline(lm(y~x), col = "magenta", lwd = 3)
+# 
+# box(col = "black", lwd = 4)
+# 
+# mtext(paste0("correlation = ", round(cor.val,2)),
+#       adj = 0.025, cex = 0.8, line = -1.25)
+# 
+# 
+# dev.off()
