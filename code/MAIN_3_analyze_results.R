@@ -20,10 +20,10 @@ library(scales)
 save.dir <- '/Users/wdaniels/Desktop/'
 
 # Path to event detection, localization, quantification results
-data.path <- '/Users/wdaniels/Documents/code/DLQ/output_data/DLQ_output.RData'
+data.path <- 'https://raw.github.com/wsdaniels/DLQ/master/output_data/DLQ_output.RData'
 
 # Path to leak (truth) data
-leak.path <- '/Users/wdaniels/Documents/code/DLQ/input_data/leak_data.csv'
+leak.path <- 'https://raw.github.com/wsdaniels/DLQ/master/input_data/leak_data.csv'
 
 # Set colors for plots
 tank.color <- "#3062CF" #blue

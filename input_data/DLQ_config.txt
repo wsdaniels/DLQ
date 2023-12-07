@@ -1,5 +1,5 @@
 gap.time=30
 length.threshold=15
-simulation.data.path=/Users/wdaniels/Documents/code/DLQ/output_data/simulation_output.RData
-output.file.path=/Users/wdaniels/Documents/code/DLQ/output_data/DLQ_output.RData
-helper.spike.detection.alg.path=/Users/wdaniels/Documents/code/DLQ/code/HELPER_spike_detection_algorithm.R
+simulation.data.path=https://raw.github.com/wsdaniels/DLQ/master/output_data/simulation_output.RData
+output.file.path=https://raw.github.com/wsdaniels/DLQ/master/output_data/DLQ_output.RData
+helper.spike.detection.alg.path=https://raw.github.com/wsdaniels/DLQ/master/code/HELPER_spike_detection_algorithm.R
