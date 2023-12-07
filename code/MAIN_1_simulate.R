@@ -11,13 +11,16 @@ library(zoo)
 library(lubridate)
 library(foreach)
 library(doParallel)
+library(rstudioapi)
 
 
 # START USER INPUT
 #---------------------------------------------------------------------------
 
 # Set path to simulation configuration file
-
+if (commandArgs()[1] == "RStudio"){
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+}
 config.file.dir <- '../input_data/simulation_config.txt'
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT

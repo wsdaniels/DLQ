@@ -10,12 +10,16 @@ rm(list = ls())
 # Import necessary libraries
 library(lubridate)
 library(zoo)
+library(rstudioapi)
 
 
 # START USER INPUT
 #---------------------------------------------------------------------------
 
 # Set path to simulation configuration file
+if (commandArgs()[1] == "RStudio"){
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+}
 config.file.dir <- '../input_data/DLQ_config.txt'
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
