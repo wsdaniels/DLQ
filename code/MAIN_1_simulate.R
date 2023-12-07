@@ -17,7 +17,8 @@ library(doParallel)
 #---------------------------------------------------------------------------
 
 # Set path to simulation configuration file
-config.file.dir <- '/Users/wdaniels/Documents/code/DLQ/input_data/simulation_config.txt'
+
+config.file.dir <- 'https://raw.github.com/wsdaniels/DLQ/master/input_data/simulation_config.txt'
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
 #---------------------------------------------------------------------------
