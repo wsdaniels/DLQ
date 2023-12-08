@@ -1,7 +1,9 @@
-# Description: Simulates methane concentration at point sensor locations
-#              given a source location and wind conditions
+# Description: 
+# Runs the Gaussian puff atmospheric dispersion model to simulate methane
+# concentrations at CMS sensor locations given wind data and potential source
+# locations. 
 # Author: William Daniels (wdaniels@mines.edu)
-# Last Updated: November 10, 2022
+# Last Updated: December 2023
 
 # Clear environment
 rm(list = ls())
@@ -13,14 +15,14 @@ library(foreach)
 library(doParallel)
 library(rstudioapi)
 
+if (commandArgs()[1] == "RStudio"){
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+}
 
 # START USER INPUT
 #---------------------------------------------------------------------------
 
 # Set path to simulation configuration file
-if (commandArgs()[1] == "RStudio"){
-  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-}
 config.file.dir <- '../input_data/simulation_config.txt'
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
@@ -70,7 +72,7 @@ code.start.time <- Sys.time()
 
 
 
-# STEP 2: READ IN CM SENSOR DATA
+# STEP 2: READ IN CMS SENSOR DATA
 #---------------------------------------------------------------------------
 
 # Read in sensor data csv

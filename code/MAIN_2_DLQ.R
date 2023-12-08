@@ -1,7 +1,9 @@
-# Description: Performs emission event detection, localization, and quantification
-#              using predictions from the Gaussian puff simulation
+# Description: 
+# Performs emission event detection, localization, and quantification
+# using output from the Gaussian puff dispersion model and CMS concentration
+# observations.
 # Author: William Daniels (wdaniels@mines.edu)
-# Last Updated: November 10, 2022
+# Last Updated: December 2023
 
 # Clear environment
 if(!is.null(dev.list())){dev.off()}
@@ -12,14 +14,15 @@ library(lubridate)
 library(zoo)
 library(rstudioapi)
 
+if (commandArgs()[1] == "RStudio"){
+  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+}
+
 
 # START USER INPUT
 #---------------------------------------------------------------------------
 
 # Set path to simulation configuration file
-if (commandArgs()[1] == "RStudio"){
-  setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-}
 config.file.dir <- '../input_data/DLQ_config.txt'
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
