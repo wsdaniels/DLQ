@@ -6,5 +6,5 @@ Inputs to the MAIN_1 and MAIN_2 files are controlled using two configuration fil
 
 The MAIN_3 script generates all results and figures for the accompanying manuscript (Daniels et al. 2023): https://doi.org/10.26434/chemrxiv-2022-xxkk8-v3
 
-Note that the "input_data" directory also contains the raw concentration data, sensor locations, and source locations from the ADED experiment discussed in Daniels et al. 2023. The "output_data" directory is where output from the MAIN_1 and MAIN_2 scripts is saved. Output files have been pregenerated and are saved in these directories.
+Note that the "input_data" directory also contains the raw concentration data, sensor locations, and source locations from the ADED experiment discussed in Daniels et al. 2023. The "output_data" directory is where output from the MAIN_1 and MAIN_2 scripts is saved. Output files have been pre-generated and are saved in these directories.
 
