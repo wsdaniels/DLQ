@@ -1,7 +1,8 @@
-# Description: Analyzes event detection, localization, and quantification 
-#              results and reproduces paper figures
+# Description: 
+# Summarizes event detection, localization, and quantification results and 
+# reproduces paper figures.
 # Author: William Daniels (wdaniels@mines.edu)
-# Last Updated: November 10, 2022
+# Last Updated: December 2023
 
 # Clear environment
 if(!is.null(dev.list())){dev.off()}
@@ -13,13 +14,13 @@ library(scales)
 # library(circular)
 library(rstudioapi)
 
-
-# START USER INPUT
-#---------------------------------------------------------------------------
-
 if (commandArgs()[1] == "RStudio"){
   setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 }
+
+
+# START USER INPUT
+#---------------------------------------------------------------------------
 
 # Directory to save plots
 save.dir <- '../'
