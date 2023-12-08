@@ -1,6 +1,6 @@
 # Detection, localization, and quantification (DLQ) using continuous monitoring systems (CMS)
 
-Repository contains code used to estimate methane emission start and end time (detection), source location (localization), and emission rate (quantification) using concentration observations from a network of point-in-space continuous monitoring systems. The code is separated into two main scripts located in the "code" directory: 1) MAIN_1_simulate runs the Gaussian puff atmospheric dispersion model, and 2) MAIN_2_DLQ uses output from the Gaussian puff model to perform DLQ.
+Repository contains code used to estimate methane emission start and end time (detection), source location (localization), and emission rate (quantification) using concentration observations from a network of point-in-space continuous monitoring systems. The code is separated into two main scripts located in the "code" directory: 1) MAIN_1_simulate runs the Gaussian puff atmospheric dispersion model, and 2) MAIN_2_DLQ uses output from the Gaussian puff model to perform DLQ. The HELPER scripts contain auxiliary functions used in the MAIN_1 and MAIN_2 scripts.
 
 Inputs to the MAIN_1 and MAIN_2 files are controlled using two configuration files found in the "input_data" directory. The "simulation_config.txt" file controls input for the MAIN_1 script and the "DLQ_config.txt" file controls input for the MAIN_2 script. A README file is provided for each config file in the "input_data" directory.
 
