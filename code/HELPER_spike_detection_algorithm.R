@@ -100,7 +100,7 @@ find.spikes <- function(
         if (last.ob){
           event.size <- max(event.obs) - event.obs[1]
         } else {
-          event.size <- max(event.obs) - mean(event.obs[1], event.obs[length(event.obs)])
+          event.size <- max(event.obs) - mean(c(event.obs[1], event.obs[length(event.obs)]))
         }
         
         # If the background corrected amplitude is less than amplitude threshold,
@@ -138,7 +138,7 @@ find.spikes <- function(
             
             # Compute background corrected event amplitude
             # Use mean of first and last observation as the background estimate
-            event.size <- max(event.obs) - mean(event.obs[1], event.obs[length(event.obs)])
+            event.size <- max(event.obs) - mean(c(event.obs[1], event.obs[length(event.obs)]))
             
             # If the background corrected amplitude is less than amplitude threshold,
             # then remove this event
