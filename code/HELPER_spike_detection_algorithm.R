@@ -5,7 +5,7 @@ find.spikes <- function(
     amp.threshold = 1, # [ppm]
     cont.diff.threshold = 0.25, # [ppm]
     cont.diff.num = 10, # [number of observations]
-    make.plot = T # include a plot with the returned data?
+    make.plot = F # include a plot with the returned data?
 ){
   
   
@@ -23,6 +23,9 @@ find.spikes <- function(
   
   # Indicator for if loop has reached the last observation
   last.ob <- F
+  
+  # Running background estimate
+  background <- NA
   
   # Loop through the observations
   for (i in start.ind:length(obs)){
@@ -60,31 +63,26 @@ find.spikes <- function(
       if (current.diff > threshold.to.use){
         in.event <- T
         count <- count + 1
-        event.obs <- c(obs[last.ind], obs[current.ind])
-        events[c(last.ind, current.ind)] <- count
+        event.obs <- obs[current.ind]
+        events[current.ind] <- count
+        background <- obs[last.ind]
       }
       
       # Branch for when you are currently in an event
     } else {
       
-      # Add current observation to vector of observations in this event
-      event.obs <- c(event.obs, obs[current.ind])
-      
-      # Add this event number to the record of events
-      events[i] <- count
-      
       # Compute the maximum value of this event up to time step i and with
       # the background removed. We assume that the last observation before
       # the large difference is the background concentration.
-      current.max <- max(event.obs) - event.obs[1]
+      current.max <- max(event.obs) - background
       
       # Compute the current background corrected observation.
-      current.ob <- obs[current.ind] - event.obs[1]
+      current.ob <- obs[current.ind] - background
       
       # End event if the current observation has returned to return.threshold 
       # percent of the background corrected maximum value or if it is the 
       # last observation
-      if (current.ob < return.threshold * current.max / 100 | last.ob){
+      if ((current.ob < 2*background & current.ob < return.threshold * current.max / 100) | last.ob){
         
         # End event
         in.event <- F
@@ -98,9 +96,9 @@ find.spikes <- function(
         # Use mean of first and last observation as the background estimate,
         # unless the event includes the last observation, than use just first ob
         if (last.ob){
-          event.size <- max(event.obs) - event.obs[1]
+          event.size <- max(event.obs) - background
         } else {
-          event.size <- max(event.obs) - mean(c(event.obs[1], event.obs[length(event.obs)]))
+          event.size <- max(event.obs) - mean(c(background, obs[current.ind]))
         }
         
         # If the background corrected amplitude is less than amplitude threshold,
@@ -110,11 +108,17 @@ find.spikes <- function(
           count <- count - 1
         }
         
-        # If the event is not over, check for long stretch of small differences.
-        # This indicates that the return threshold was not triggered but should 
-        # have been.
+        # Branch for if the event is not ended
       } else {
         
+        # Add current observation to vector of observations in this event
+        event.obs <- c(event.obs, obs[current.ind])
+        
+        # Add this event number to the record of events
+        events[i] <- count
+        
+        # Check for long stretch of small differences. This indicates that the
+        # return threshold was not triggered but should have been.
         if (length(event.obs) > cont.diff.num){
           
           # Compute first index of observations within this event that should
@@ -138,7 +142,7 @@ find.spikes <- function(
             
             # Compute background corrected event amplitude
             # Use mean of first and last observation as the background estimate
-            event.size <- max(event.obs) - mean(c(event.obs[1], event.obs[length(event.obs)]))
+            event.size <- max(event.obs) - mean(c(background, obs[current.ind]))
             
             # If the background corrected amplitude is less than amplitude threshold,
             # then remove this event
@@ -190,16 +194,6 @@ find.spikes <- function(
     }
   }
   
-  
-  # Drop first and last spike times, as they are before and after the spike
-  for (p in na.omit(unique(filtered.events$events))){
-    min.ind <- min(which(filtered.events$events == p))
-    max.ind <- max(which(filtered.events$events == p))
-    filtered.events$events[c(min.ind, max.ind)] <- NA
-  }
-  
   return(filtered.events)
   
 }
-
-
