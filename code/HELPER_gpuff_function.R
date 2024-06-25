@@ -5,7 +5,7 @@ is.day <- function(time){
   # more flexible.
   time.hour <- as.numeric(format(time, format = "%H"))
   
-  if (time.hour >= 7 & time.hour <= 19){
+  if (time.hour >= 7 & time.hour <= 18){
     return(T)
   } else {
     return(F)
