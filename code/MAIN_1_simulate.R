@@ -293,11 +293,12 @@ for (s in 1:n.s){
   WA.x <- cos(WA)
   WA.y <- sin(WA)
   
-  # Pad one-minute-data to get it on simulation frequency
+  # Interpolate one-minute-data to get it on simulation frequency
   est.on.fine.grid <- function(y, dt){
     out <- y[1]
     for (i in 2:length(y)){
-      out <- c(out, rep(y[i], 60/dt))
+      interp.y <- seq(y[i-1], y[i], length.out=60/dt)
+      out <- c(out, interp.y)
     }
     return(out)
   }
