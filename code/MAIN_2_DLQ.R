@@ -42,8 +42,9 @@ parameters <- sapply(config, function(X) X[1])
 values <- sapply(config, function(X) X[2])
 
 # Get parameter values
-gap.time         <- as.numeric(values  [parameters == "gap.time"])
-length.threshold <- as.numeric(values  [parameters == "length.threshold"])
+gap.time           <- as.numeric(values[parameters == "gap.time"])
+length.threshold   <- as.numeric(values[parameters == "length.threshold"])
+do.event.detection <- as.logical(values[parameters == "do.event.detection"])
 
 # Get directories
 simulation.data.path <-            as.character(values[parameters == "simulation.data.path"])
@@ -205,79 +206,98 @@ for (j in to.use){
 # (and hence no need to run the spike detection algorithm again)
 max.obs <- apply(obs, 1, max, na.rm = T)
 
-# Create data frame with time steps and event mask
-spikes <- data.frame(time = times, events = max.obs > 0)
-
-# Find gaps between events that are shorter than gap.time and turn them into events
-#   to.replace holds the indices that need to be switched from F to T
-#   first.gap is an indicator for the first gap (which should not be replaced,
-#   regardless of length)
-#   false.seq holds the indices of each sequence of FALSEs (non-events)
-to.replace <- c()
-first.gap <- T
-false.seq <- c()
-
-# Loop through times
-for (i in 1:length(times)){
+# Estimate emission start and end times 
+if (do.event.detection){
   
-  # If not a spike, add index to false.sequence
-  if (!spikes$events[i]){
-    false.seq <- c(false.seq, i)
+  # Create data frame with time steps and event mask
+  spikes <- data.frame(time = times, events = max.obs > 0)
+  
+  # Find gaps between events that are shorter than gap.time and turn them into events
+  #   to.replace holds the indices that need to be switched from F to T
+  #   first.gap is an indicator for the first gap (which should not be replaced,
+  #   regardless of length)
+  #   false.seq holds the indices of each sequence of FALSEs (non-events)
+  to.replace <- c()
+  first.gap <- T
+  false.seq <- c()
+  
+  # Loop through times
+  for (i in 1:length(times)){
     
-    # Otherwise, check length of false sequence, if greater than gap time,
-    # save those indices to replace later
-  } else if (spikes$events[i]){
-    
-    if (length(false.seq) <= gap.time & !first.gap){
-      to.replace <- c(to.replace, false.seq)
+    # If not a spike, add index to false.sequence
+    if (!spikes$events[i]){
+      false.seq <- c(false.seq, i)
+      
+      # Otherwise, check length of false sequence, if greater than gap time,
+      # save those indices to replace later
+    } else if (spikes$events[i]){
+      
+      if (length(false.seq) <= gap.time & !first.gap){
+        to.replace <- c(to.replace, false.seq)
+      }
+      
+      first.gap <- F
+      false.seq <- c()
     }
+  }
+  
+  # Replace gaps shorter than gap.time with T (meaning they are in an event)
+  spikes$events[to.replace] <- T
+  
+  # Now we replace the T/F with an integer to distinguish between events
+  # Start by replacing F with NA and T with zero
+  spikes$events[!spikes$events] <- NA
+  spikes$events[spikes$events] <- 0
+  
+  # Get indices of spikes
+  spike.points <- which(!is.na(spikes$events))
+  count <- 0
+  
+  # Loop through spike points, if last point was not a spike, increase counter
+  for (i in spike.points){
     
-    first.gap <- F
-    false.seq <- c()
+    if (is.na(spikes$events[i-1])){
+      count <- count + 1
+      spikes$events[i] <- count
+    } else {
+      spikes$events[i] <- count
+    }
   }
-}
-
-# Replace gaps shorter than gap.time with T (meaning they are in an event)
-spikes$events[to.replace] <- T
-
-# Now we replace the T/F with an integer to distinguish between events
-# Start by replacing F with NA and T with zero
-spikes$events[!spikes$events] <- NA
-spikes$events[spikes$events] <- 0
-
-# Get indices of spikes
-spike.points <- which(!is.na(spikes$events))
-count <- 0
-
-# Loop through spike points, if last point was not a spike, increase counter
-for (i in spike.points){
   
-  if (is.na(spikes$events[i-1])){
-    count <- count + 1
-    spikes$events[i] <- count
-  } else {
-    spikes$events[i] <- count
-  }
-}
-
-# Get integers that uniquely define the different events
-event.nums <- na.omit(unique(spikes$events))
-
-# Filter events by the length threshold
-for (i in 1:length(event.nums)){
-  this.spike <- which(spikes$events == event.nums[i])
+  # Get integers that uniquely define the different events
+  event.nums <- na.omit(unique(spikes$events))
   
-  if (length(this.spike) < length.threshold){
-    spikes$events[this.spike] <- NA
+  # Filter events by the length threshold
+  for (i in 1:length(event.nums)){
+    this.spike <- which(spikes$events == event.nums[i])
+    
+    if (length(this.spike) < length.threshold){
+      spikes$events[this.spike] <- NA
+    }
   }
+  
+  # Grab event number again after filtering by length
+  event.nums <- na.omit(unique(spikes$events))
+  
+  # Number of events that we will perform localization / quantification on
+  n.ints <- length(event.nums)
+  
+  
+  # Perform localization and quantification on non-overlapping 30-minute intervals
+} else {
+  
+  # Get range of times, rounded to 30-minute intervals
+  date.range <- range(data$times)
+  date.range[1] <- ceiling_date(date.range[1], unit = "30 minutes") 
+  date.range[2] <- floor_date(date.range[2], unit = "30 minutes") 
+  
+  # Times separating the 30-minute intervals
+  int.breaks <- seq(date.range[1], date.range[2], by = "30 min") 
+  
+  # Number of intervals
+  n.ints <- length(int.breaks) - 1
+  
 }
-
-# Grab event number again after filtering by length
-event.nums <- na.omit(unique(spikes$events))
-
-# Number of events that we will perform localization / quantification on
-n.ints <- length(event.nums)
-
 
 
 # STEP 4: COMPUTE ALIGNMENT METRIC
@@ -289,9 +309,16 @@ metrics <- matrix(NA, nrow = n.ints, ncol = n.s)
 # Loop through events
 for (t in 1:n.ints){
   
-  # Mask in this event
-  this.mask <- seq(min(which(spikes$events == event.nums[t])),
-                   max(which(spikes$events == event.nums[t])))
+  # If doing event detection, use the timing from the spike detection output
+  if (do.event.detection){
+    
+    this.mask <- seq(min(which(spikes$events == event.nums[t])),
+                     max(which(spikes$events == event.nums[t])))
+    
+    # If doing 30-minute mode, use the interval breaks defined earlier
+  } else {
+    this.mask <- spikes$time %within% interval(int.breaks[t], int.breaks[t+1])
+  }
   
   # Loop through potential sources
   for (s in 1:n.s){
@@ -366,9 +393,16 @@ for (t in 1:n.ints){
   # Get source name corresponding to largest metric value
   loc.est.all.events[t] <- source.names[which.max(these.metrics)]
   
-  # Mask in this event
-  this.mask <- seq(min(which(spikes$events == event.nums[t])),
-                   max(which(spikes$events == event.nums[t])))
+  # If doing 30-minute mode, use the interval breaks defined earlier
+  if (do.event.detection){
+    
+    this.mask <- seq(min(which(spikes$events == event.nums[t])),
+                     max(which(spikes$events == event.nums[t])))
+    
+    # If doing 30-minute mode, use the interval breaks defined earlier
+  } else {
+    this.mask <- spikes$time %within% interval(int.breaks[t], int.breaks[t+1])
+  }
   
   # Get predictions from most likely source and observations during this event
   event.preds <- sims [[which.max(these.metrics)]][this.mask, ]
@@ -464,13 +498,27 @@ for (t in 1:n.ints){
     error.upper.all.events[t] <- quantile(q.vals, probs = 0.95, na.rm = T) * 3600
     
     # If there are not enough time steps in which both observations and
-    # predictions are in a spike, then do not estimate a rate
+    # predictions are in a spike, then do not estimate a rate.
+    # NOTE: differentiate between events/intervals where we do not think emissions are happening,
+    # i.e., when observations are all zero, and times when we think emissions are 
+    # happening, but when we don't have enough alignment between simulation and 
+    # observations to estimate an emission rate.
   } else {
-    rate.est.all.events[t]    <- NA
-    error.lower.all.events[t] <- NA
-    error.upper.all.events[t] <- NA
+    
+    # No concentration enhancements, likely that no emissions are happening, so set rate to 0
+    if (all(max.obs[this.mask] == 0)) {
+      
+      rate.est.all.events[t]  <- 0
+      error.lower.all.events[t] <- 0
+      error.upper.all.events[t] <- 0
+      
+      # Emissions could be happening, but not enough alignment to quantify
+    } else {
+      rate.est.all.events[t]  <- NA
+      error.lower.all.events[t] <- NA
+      error.upper.all.events[t] <- NA
+    }
   }
-  
 } # End loop through events
 
 # Check that predictions and observations are on the same order of magnitude

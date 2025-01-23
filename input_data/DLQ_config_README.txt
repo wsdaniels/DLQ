@@ -2,6 +2,8 @@ gap.time: Distinct events that are separated by gap.time minutes or less will be
 
 length.threshold: Events shorter than or equal to length.threshold minutes will be discarded.
 
+do.event.detection: Set to T if you want to estimate emission start and end times, and then perform localization and quantification on the resulting events. Set to F if you want to perform localization and quantification on non-overlapping 30-minute intervals.
+
 simulation.data.path: Location (including file name) of simulation output (output of MAIN_1_simulate.R)
 
 output.file.path: Location (including file name) of output data file that will contain the event detection, localization, and quantification results.
