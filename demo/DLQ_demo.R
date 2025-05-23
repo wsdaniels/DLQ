@@ -22,40 +22,50 @@ if (commandArgs()[1] == "RStudio"){
 # START USER INPUT
 #---------------------------------------------------------------------------
 
-# Set path to simulation configuration file
-config.file.dir <- '../input_data/DLQ_config.txt'
+# Set parameter values
+gap.time           <- 30
+length.threshold   <- 15
+do.event.detection <- F
+
+# Get directories
+simulation.directory <- "./input_files/simulation_files/"
+observation.file <- "./input_files/ch4_exp.csv"
+output.file.path <- "./"
+
+# Source helper files which contain helper functions 
+source('https://raw.github.com/wsdaniels/DLQ/master/code/HELPER_spike_detection_algorithm.R')
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
 #---------------------------------------------------------------------------
 
 
 
+
+
+
 # STEP 1: READ IN CONFIG FILE AND SET UP PARAMETERS AND DIRECTORY STRUCTURE
 #---------------------------------------------------------------------------
 
-# Read in config file
-config <- suppressWarnings(read.table(config.file.dir))
-config <- strsplit(config[,1], "=")
+sim.files <- list.files(simulation.directory)
 
-# Parse out config file
-parameters <- sapply(config, function(X) X[1])
-values <- sapply(config, function(X) X[2])
+sims <- vector(mode = "list", length = length(sim.files))
+names(sims) <- sapply(strsplit(sim.files, "\\."), function(X) X[[1]])
+for (i in 1:length(sim.files)){
+  this.sim <- read.csv(paste0(simulation.directory, sim.files[i]))
+  times <- this.sim$timestamp
+  sims[[i]] <- this.sim[,-1]
+}
 
-# Get parameter values
-gap.time           <- as.numeric(values[parameters == "gap.time"])
-length.threshold   <- as.numeric(values[parameters == "length.threshold"])
-do.event.detection <- as.logical(values[parameters == "do.event.detection"])
+obs <- read.csv(paste0(observation.file))[,-1]
 
-# Get directories
-simulation.data.path <-            as.character(values[parameters == "simulation.data.path"])
-output.file.path <-                as.character(values[parameters == "output.file.path"])
-helper.spike.detection.alg.path <- as.character(values[parameters == "helper.spike.detection.alg.path"])
+times <- as_datetime(times)
+times <- as_datetime(times, tz = "America/Denver")
 
-# Source helper files which contain helper functions 
-source(helper.spike.detection.alg.path)
+data <- list(times = times, obs = obs)
+data <- c(data, sims)
 
 # Read in simulation data
-data <- readRDS(simulation.data.path)
+# data <- readRDS(simulation.data.path)
 
 # Pull out sensor observations and replace NA's that are not on edge of 
 # the time series with interpolated values
@@ -68,7 +78,7 @@ n.r <- ncol(obs)
 times <- data$times
 
 # Pull out the simulation predictions
-sims <- data[5:length(data)]
+sims <- data[3:length(data)]
 
 # Grab source info
 n.s <- length(sims) 
@@ -424,8 +434,8 @@ for (t in 1:n.ints){
     # Find spikes in both predictions and observations.
     # We will only use data in which both a observation and prediction is in a spike
     # to estimate the emission rate. This reduces impact of forward model inadequacies.
-    preds.spikes <- find.spikes(event.times, these.preds, amp.threshold = 1, make.plot = F)
-    obs.spikes   <- find.spikes(event.times, these.obs,   amp.threshold = 1, make.plot = F)
+    preds.spikes <- find.spikes(event.times, these.preds, amp.threshold = 0.5, make.plot = F)
+    obs.spikes   <- find.spikes(event.times, these.obs,   amp.threshold = 0.5, make.plot = F)
     
     # Mask for times in which both preds and obs are in a spike
     both.in.spike.mask <- !is.na(preds.spikes$events) & !is.na(obs.spikes$events)
@@ -533,16 +543,21 @@ if ( med.p > med.o * 10 & med.p < med.o / 10 ){
 }
 
 # Package up event detection, localization, and quantification results
-to.save <- list(event.mask = spikes,
-                max.obs = max.obs,
-                localization.estimates = loc.est.all.events,
-                rate.estimates = rate.est.all.events,
-                error.lower = error.lower.all.events,
-                error.upper = error.upper.all.events,
-                source.names = source.names,
-                WD = data$WD,
-                WS = data$WS)
+# to.save <- list(event.mask = spikes,
+#                 max.obs = max.obs,
+#                 localization.estimates = loc.est.all.events,
+#                 rate.estimates = rate.est.all.events,
+#                 error.lower = error.lower.all.events,
+#                 error.upper = error.upper.all.events,
+#                 source.names = source.names,
+#                 WD = data$WD,
+#                 WS = data$WS)
+
+to.save <- data.frame(time = int.breaks[-length(int.breaks)], rate.estimate = rate.est.all.events,
+                      localization.estimate = loc.est.all.events,
+                      rate.estimate.lower = error.lower.all.events,
+                      rate.estimate.upper = error.upper.all.events)
 
 # Save results
-saveRDS(to.save, output.file.path)
+write.csv(to.save, paste0(output.file.path, "DLQ_output.csv"))
 
