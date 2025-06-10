@@ -6,5 +6,5 @@ Inputs to the MAIN_1 and MAIN_2 files are controlled using two configuration fil
 
 The MAIN_3 script generates all results and figures for the accompanying manuscript (Daniels et al. 2024): https://doi.org/10.1525/elementa.2023.00110
 
-Note that the "input_data" directory also contains the raw concentration data, sensor locations, and source locations from the ADED experiment discussed in Daniels et al. 2024. The "output_data" directory is where output from the MAIN_1 and MAIN_2 scripts is saved. Output files have been pre-generated and are saved in these directories.
+Note that the "input_data" directorycontains sensor and source locations from the ADED experiment discussed in Daniels et al. 2024. The "output_data" directory is where output from the MAIN_1 and MAIN_2 scripts is saved. Output files have been pre-generated and are saved in these directories. The raw concentration data used to generate the output files can be made available upon request to Project Canary.
 
