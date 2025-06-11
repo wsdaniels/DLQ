@@ -8,5 +8,3 @@ methane: Methane concentration measurements in parts per million. The code can h
 
 name: Uniquely defined sensor names. Needs to be the same as the names in the "sensor_locations.csv" file.
 
-
-NOTE: The full ADED data can be made available upon request to Project Canary.
