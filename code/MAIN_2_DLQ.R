@@ -57,6 +57,21 @@ source(helper.spike.detection.alg.path)
 # Read in simulation data
 data <- readRDS(simulation.data.path)
 
+
+
+# Trim data so that they start and end at either the hour or half hour. 
+# This makes it so that all 30-minute intervals at aligned 
+# This step was written by Spencer Kidd and added June 11, 2025
+first.clean.time <- min(which(minute(data$times) %in% c(0,30)))
+last.clean.time <- max(which(minute(data$times) %in% c(0,30)))
+to.keep <- first.clean.time:last.clean.time
+data$times <- data$times[to.keep]
+data$WD <- data$WD[to.keep]
+data$WS <- data$WS[to.keep]
+data$obs <- data$obs[to.keep, ]
+data[5:length(data)] <- lapply(data[5:length(data)], function(X) X[to.keep, ])
+
+
 # Pull out sensor observations and replace NA's that are not on edge of 
 # the time series with interpolated values
 obs <- na.approx(data$obs, na.rm = F)
@@ -462,31 +477,82 @@ for (t in 1:n.ints){
                                 size = length(all.preds.to.compare)/2,
                                 replace = T)
       
-      # Define a grid of emission rate values to optimize over
-      q.grid <- lseq(0.0001, 3000, length.out = 2000)
+      # --------- OLD GRID SEARCH CODE -------------------------
+      # # Define a grid of emission rate values to optimize over
+      # q.grid <- lseq(0.0001, 3000, length.out = 2000)
+      # 
+      # # Vector to hold sum of squared errors
+      # sse <- vector(length = length(q.grid))
+      # 
+      # # Loop through possible emission rates
+      # for (z in 1:length(q.grid)){
+      # 
+      #   # Scale predictions by this emission rate
+      #   qxp <- q.grid[z] * all.preds.to.compare
+      # 
+      #   # Compute root mean square error
+      #   sse[z] <- sqrt( mean( (all.obs.to.compare[this.sample] - qxp[this.sample])^2, na.rm = T) )
+      # 
+      # } # End loop through grid of emission rates
+      # 
+      # # If RMSE is monotonically increasing, there is no optimal q
+      # if (all(diff(sse) > 0)){
+      #   q.vals[o] <- NA
+      #   # Otherwise, save best rate and percent differences
+      # } else {
+      #   q.vals[o] <- q.grid[which.min(sse)]
+      # }
+      # --------- END OLD GRID SEARCH CODE ----------------------
       
-      # Vector to hold sum of squared errors
-      sse <- vector(length = length(q.grid))
-      
-      # Loop through possible emission rates
-      for (z in 1:length(q.grid)){
-        
-        # Scale predictions by this emission rate
-        qxp <- q.grid[z] * all.preds.to.compare
-        
-        # Compute root mean square error
-        sse[z] <- sqrt( mean( (all.obs.to.compare[this.sample] - qxp[this.sample])^2, na.rm = T) )
-        
-      } # End loop through grid of emission rates
-      
-      # If RMSE is monotonically increasing, there is no optimal q 
-      if (all(diff(sse) > 0)){
+      # Binary search code written by Troy Sorensen. 
+      # Implemented here on June 11, 2025.
+      # ------------ NEW BINARY SEARCH CODE ---------------------
+      preds_s <- all.preds.to.compare[this.sample]
+      obs_s   <- all.obs.to.compare[this.sample]
+
+      # Set bounds for search (grid search had 0 to 3000 on a logarithmic grid)
+      q_low  <- 0
+      q_high <- 3000
+      tol    <- 1e-3
+
+      # Check derivative of upper and lower bounds of the search range
+      deriv_low  <- sum(preds_s * (obs_s - q_low    * preds_s))
+      deriv_high <- sum(preds_s * (obs_s - q_high * preds_s))
+
+      if (all(preds_s == 0)) {
+        # If all predictions are zero, no slope: cannot estimate q, set to NA
         q.vals[o] <- NA
-        
-        # Otherwise, save best rate and percent differences
+      } else if (deriv_low * deriv_high > 0) {
+        # Derivatives have same sign: thus no root lies in [q_low,q_high].
+        # Set q to q_low or q_high accordingly.
+        q.vals[o] <- if (deriv_low > 0) q_high else q_low
       } else {
-        q.vals[o] <- q.grid[which.min(sse)]
+        # Root lies in [q_low,q_high]. Find via binary search.
+        # Stop when abs(deriv) < tol or 50 iterations are performed, whichever occurs first.
+        for (iter in 1:50) {
+          q_mid <- (q_low + q_high) / 2
+
+          # derivative of SSE(q) w.r.t. q is sum(preds * (obs - q*preds))
+          deriv <- sum(preds_s * (obs_s - q_mid * preds_s), na.rm = TRUE)
+
+          if (is.na(deriv)) {
+            q_mid <- NA
+            break
+          }
+          if (abs(deriv) < tol) {
+            break
+          }
+          # if deriv > 0, SSE is still decreasing as q increases → move lower bound up
+          if (deriv > 0) {
+            q_low <- q_mid
+          } else {
+            q_high <- q_mid
+          }
+        }
+
+        q.vals[o] <- q_mid
       }
+      # ------------ END BINARY SEARCH CODE ---------------------
       
     } # End loop through samples
     
