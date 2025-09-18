@@ -1,6 +1,8 @@
 gap.time=30
 length.threshold=15
 do.event.detection=T
-simulation.data.path=../output_data/simulation_output.RData
+first.sim.ind=5
+n.samples=1000
+forward.model.path=../input_data/forward_model_output_ADED2024.RData
 output.file.path=../output_data/DLQ_output.RData
 helper.spike.detection.alg.path=../code/HELPER_spike_detection_algorithm.R
