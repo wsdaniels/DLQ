@@ -651,7 +651,7 @@ for (t in 1:n.ints){
 med.p <- median(all.preds.to.compare.all.events, na.rm = T)
 med.o <- median(all.obs.to.compare.all.events,   na.rm = T)
 
-if (med.p > med.o * 10 & med.p < med.o / 10){
+if (med.p > med.o * 10 | med.p < med.o / 10){
   if (med.p > med.o){
     print("WARNING: Simulation output and observations are on different order, recommend re-simulating with smaller rate")
   } else {
