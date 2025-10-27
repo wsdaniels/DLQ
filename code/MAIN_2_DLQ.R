@@ -1,9 +1,8 @@
-# Description: 
-# Performs emission event detection, localization, and quantification
-# using output from the Gaussian puff dispersion model and CMS concentration
-# observations.
+# Description: Performs emission event detection, localization, and quantification
+#              using output from the Gaussian puff dispersion model and CMS concentration
+#              observations.
 # Author: William Daniels (wdaniels@mines.edu)
-# Last Updated: December 2023
+# Last Updated: September 5, 2025
 
 # Clear environment
 if(!is.null(dev.list())){dev.off()}
@@ -19,6 +18,9 @@ if (commandArgs()[1] == "RStudio"){
 }
 
 
+
+
+
 # START USER INPUT
 #---------------------------------------------------------------------------
 
@@ -27,6 +29,8 @@ config.file.dir <- '../input_data/DLQ_config.txt'
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
 #---------------------------------------------------------------------------
+
+
 
 
 
@@ -39,38 +43,36 @@ config <- strsplit(config[,1], "=")
 
 # Parse out config file
 parameters <- sapply(config, function(X) X[1])
-values <- sapply(config, function(X) X[2])
+values     <- sapply(config, function(X) X[2])
 
 # Get parameter values
 gap.time           <- as.numeric(values[parameters == "gap.time"])
 length.threshold   <- as.numeric(values[parameters == "length.threshold"])
 do.event.detection <- as.logical(values[parameters == "do.event.detection"])
+first.sim.ind      <- as.numeric(values[parameters == "first.sim.ind"])
+n.samples          <- as.numeric(values[parameters == "n.samples"])
 
 # Get directories
-simulation.data.path <-            as.character(values[parameters == "simulation.data.path"])
-output.file.path <-                as.character(values[parameters == "output.file.path"])
+forward.model.path              <- as.character(values[parameters == "forward.model.path"])
+output.file.path                <- as.character(values[parameters == "output.file.path"])
 helper.spike.detection.alg.path <- as.character(values[parameters == "helper.spike.detection.alg.path"])
 
 # Source helper files which contain helper functions 
 source(helper.spike.detection.alg.path)
 
 # Read in simulation data
-data <- readRDS(simulation.data.path)
+data <- readRDS(forward.model.path)
 
-
-
-# Trim data so that they start and end at either the hour or half hour. 
-# This makes it so that all 30-minute intervals at aligned 
-# This step was written by Spencer Kidd and added June 11, 2025
+# Trim data so that they start and end at either the hour or half hour
 first.clean.time <- min(which(minute(data$times) %in% c(0,30)))
 last.clean.time <- max(which(minute(data$times) %in% c(0,30)))
 to.keep <- first.clean.time:last.clean.time
+
 data$times <- data$times[to.keep]
 data$WD <- data$WD[to.keep]
 data$WS <- data$WS[to.keep]
 data$obs <- data$obs[to.keep, ]
-data[5:length(data)] <- lapply(data[5:length(data)], function(X) X[to.keep, ])
-
+data[first.sim.ind:length(data)] <- lapply(data[first.sim.ind:length(data)], function(X) X[to.keep, ])
 
 # Pull out sensor observations and replace NA's that are not on edge of 
 # the time series with interpolated values
@@ -83,7 +85,7 @@ n.r <- ncol(obs)
 times <- data$times
 
 # Pull out the simulation predictions
-sims <- data[5:length(data)]
+sims <- data[first.sim.ind:length(data)]
 
 # Grab source info
 n.s <- length(sims) 
@@ -106,14 +108,17 @@ to.use <- which(apply(obs, 2, function(X) !all(is.na(X))))
 
 # Loop through sensor units
 for (j in to.use){
+  # Print status
+  print(paste0("REMOVE BACKGROUND FROM OBSERVATIONS: Sensor ", names(to.use[j]), 
+               " - ", j, "/", length(to.use)))
   
   # Grab observations from this sensor
   this.raw.obs <- obs[,j]
   
   # Remove the NA's at the beginning and end of the time series
   # (some sensors start late or end early)
-  to.keep <- !is.na(this.raw.obs)
-  trimmed.obs <- this.raw.obs[to.keep]
+  to.keep       <- !is.na(this.raw.obs)
+  trimmed.obs   <- this.raw.obs[to.keep]
   trimmed.times <- times[to.keep]
   
   # Flag spikes
@@ -160,7 +165,7 @@ for (j in to.use){
         spikes$events[this.spike] <- event.nums[i-1]
         event.nums[i] <- event.nums[i-1]
       }
-    }
+    } # End loop through spikes
   }
   
   # Grab the new event numbers after combining events in the previous for loop
@@ -174,10 +179,9 @@ for (j in to.use){
     # points, which occur before the sharp increase and after the spike has 
     # returned to return.threshold percent of the max value
     for (i in 1:length(event.nums)){
-      
       # Fill in gaps
-      first.ob <- min(which(spikes$events == event.nums[i]))
-      last.ob <- max(which(spikes$events == event.nums[i]))
+      first.ob  <- min(which(spikes$events == event.nums[i]))
+      last.ob   <- max(which(spikes$events == event.nums[i]))
       this.mask <- first.ob:last.ob
       spikes$events[this.mask] <- event.nums[i]
       
@@ -185,14 +189,13 @@ for (j in to.use){
       # This is just the first and last observation within the spike mask,
       # since we already added the points before and after the spike to the 
       # spike mask earlier on
-      b.left <- trimmed.obs[first.ob]
+      b.left  <- trimmed.obs[first.ob]
       b.right <- trimmed.obs[last.ob]
       b <- mean(c(b.left, b.right))
       
       # Remove background from this spike
       trimmed.obs[this.mask] <- trimmed.obs[this.mask] - b
-    }
-    
+    } # End loop through events
   }
   
   # Remove background from all non-spike data. Since by definition these points
@@ -206,7 +209,7 @@ for (j in to.use){
   
   # Save background removed data
   obs[to.keep, j] <- trimmed.obs
-}
+} # End loop through sensor units
 
 
 
@@ -223,7 +226,6 @@ max.obs <- apply(obs, 1, max, na.rm = T)
 
 # Estimate emission start and end times 
 if (do.event.detection){
-  
   # Create data frame with time steps and event mask
   spikes <- data.frame(time = times, events = max.obs > 0)
   
@@ -238,7 +240,6 @@ if (do.event.detection){
   
   # Loop through times
   for (i in 1:length(times)){
-    
     # If not a spike, add index to false.sequence
     if (!spikes$events[i]){
       false.seq <- c(false.seq, i)
@@ -254,7 +255,7 @@ if (do.event.detection){
       first.gap <- F
       false.seq <- c()
     }
-  }
+  } # End loop through times
   
   # Replace gaps shorter than gap.time with T (meaning they are in an event)
   spikes$events[to.replace] <- T
@@ -277,7 +278,7 @@ if (do.event.detection){
     } else {
       spikes$events[i] <- count
     }
-  }
+  } # End loop through spikes
   
   # Get integers that uniquely define the different events
   event.nums <- na.omit(unique(spikes$events))
@@ -297,22 +298,22 @@ if (do.event.detection){
   # Number of events that we will perform localization / quantification on
   n.ints <- length(event.nums)
   
-  
   # Perform localization and quantification on non-overlapping 30-minute intervals
 } else {
-  
   # Get range of times, rounded to 30-minute intervals
   date.range <- range(data$times)
-  date.range[1] <- ceiling_date(date.range[1], unit = "30 minutes") 
-  date.range[2] <- floor_date(date.range[2], unit = "30 minutes") 
+  date.range[1] <- ceiling_date(date.range[1], unit = paste0(gap.time," minutes")) 
+  date.range[2] <- floor_date(date.range[2], unit = paste0(gap.time," minutes")) 
   
   # Times separating the 30-minute intervals
-  int.breaks <- seq(date.range[1], date.range[2], by = "30 min") 
+  int.breaks <- seq(date.range[1], date.range[2], by = paste0(gap.time," min"))
   
   # Number of intervals
   n.ints <- length(int.breaks) - 1
-  
 }
+
+
+
 
 
 # STEP 4: COMPUTE ALIGNMENT METRIC
@@ -323,21 +324,22 @@ metrics <- matrix(NA, nrow = n.ints, ncol = n.s)
 
 # Loop through events
 for (t in 1:n.ints){
+  # Print status
+  print(paste0("COMPUTE ALIGNMENT METRIC: ", t, "/", n.ints))
   
-  # If doing event detection, use the timing from the spike detection output
+  # If doing event-detection mode, use the interval breaks defined earlier
   if (do.event.detection){
+    sub.mask <- times %within% interval(times[min(which(spikes$events == event.nums[t]))], 
+                                        times[max(which(spikes$events == event.nums[t]))])
     
-    this.mask <- seq(min(which(spikes$events == event.nums[t])),
-                     max(which(spikes$events == event.nums[t])))
-    
-    # If doing 30-minute mode, use the interval breaks defined earlier
+    # If doing fixed-interval mode, use fixed interval breaks separated by gap.time
+    # Ensure no minutes are double counted between intervals
   } else {
-    this.mask <- spikes$time %within% interval(int.breaks[t], int.breaks[t+1])
+    sub.mask <- times %within% interval(int.breaks[t], int.breaks[t+1] - minutes(1)) 
   }
   
   # Loop through potential sources
   for (s in 1:n.s){
-    
     # Grab simulation predictions from this source
     preds <- as.matrix(sims[[s]])
     
@@ -347,16 +349,15 @@ for (t in 1:n.ints){
     
     # Loop through sensors
     for (r in 1:n.r){
-      
       # Mask in only this event and this sensor
-      obs.int <- obs[this.mask, r]
-      preds.int <- preds[this.mask, r] 
+      obs.int   <- obs[sub.mask, r]
+      preds.int <- preds[sub.mask, r] 
       
       # Only compare non-NA observations
       to.compare <- !is.na(obs.int) 
       
       # Save predictions and observations to compare
-      all.obs.to.compare <- c(all.obs.to.compare, obs.int[to.compare])
+      all.obs.to.compare   <- c(all.obs.to.compare,   obs.int[to.compare])
       all.preds.to.compare <- c(all.preds.to.compare, preds.int[to.compare])
       
     } # end loop through sensors
@@ -374,9 +375,9 @@ for (t in 1:n.ints){
       
       # If there are nonzero values to compare, compute correlation
       if (all(x == 0) | all(y==0)){
-        metrics[t,s] <- NA
+        metrics[t, s] <- NA
       } else {
-        metrics[t,s] <- cor(x, y, use = "complete.obs", method = "pearson")  
+        metrics[t, s] <- cor(x, y, use = "complete.obs", method = "pearson")  
       }
       
     } # end if to check if there is at least one non-NA observation
@@ -388,52 +389,89 @@ for (t in 1:n.ints){
 metrics[is.na(metrics)] <- 0
 
 
+
+
+
 # STEP 5: COMPUTE LOCALIZATION AND QUANTIFICATION ESTIMATES
 #---------------------------------------------------------------------------
 
 # Vectors to hold localization and quantification results
 rate.est.all.events <- loc.est.all.events <-
   error.lower.all.events <- error.upper.all.events <- vector(length = n.ints)
-
 all.preds.to.compare.all.events <- all.obs.to.compare.all.events <- c()
+
+# Initialize list of lists to hold quantification results for all events/intervals
+big.out <- vector("list", n.ints)
 
 # Loop through events
 for (t in 1:n.ints){
+  # Print status
+  print(paste0("COMPUTE LOCALIZATION AND QUANTIFICATION ESTIMATES: ", t, "/", n.ints))
   
-  print(paste0(t, "/", n.ints))
+  # Initialize vectors to hold quantification results
+  q.hat <- q.hat.lower <- q.hat.upper <- vector(length = n.s)
   
   # Get metric values for this event
-  these.metrics <- metrics[t,]
+  these.metrics <- metrics[t, ]
   
-  # Get source name corresponding to largest metric value
-  loc.est.all.events[t] <- source.names[which.max(these.metrics)]
-  
-  # If doing 30-minute mode, use the interval breaks defined earlier
+  # If doing event-detection mode, use the interval breaks defined earlier
   if (do.event.detection){
+    sub.mask <- times %within% interval(times[min(which(spikes$events == event.nums[t]))], 
+                                        times[max(which(spikes$events == event.nums[t]))])
     
-    this.mask <- seq(min(which(spikes$events == event.nums[t])),
-                     max(which(spikes$events == event.nums[t])))
-    
-    # If doing 30-minute mode, use the interval breaks defined earlier
+    # If doing fixed-interval mode, use fixed interval breaks separated by gap.time
+    # Ensure no minutes are double counted between intervals
   } else {
-    this.mask <- spikes$time %within% interval(int.breaks[t], int.breaks[t+1])
+    sub.mask <- times %within% interval(int.breaks[t], int.breaks[t+1] - minutes(1)) 
   }
   
+  # Create matrix that holds dispersion model output
+  X <- matrix(NA, nrow = sum(sub.mask) * n.r, ncol = n.s)
+  colnames(X) <- source.names
+  
+  # Fill X matrix with simulation output
+  # Loop through sources
+  for (s in 1:n.s){
+    this.source <- c()
+    # Loop through sensors
+    for (r in 1:n.r){
+      this.source <- c(this.source, sims[[s]][sub.mask, r])
+    } # End loop through sensors
+    X[, s] <- this.source
+  } # End loop through sources
+  
+  # Determine which sources have downwind sensors (i.e., which sources have information)
+  # Here, we define a source as having 'information' if there are
+  # more than 4 minutes of simulated observations greater than 0.25 ppm
+  info.mask <- apply(X, 2, function(this.col) sum(this.col > 0.25) > 4)
+  q.hat[!info.mask] <- q.hat.lower[!info.mask] <- q.hat.upper[!info.mask] <- "no info"
+  
+  # If all sources have no information, move onto the next event/interval
+  if(all(!info.mask)) {
+    loc.est.all.events[t] <- rate.est.all.events[t] <- 
+      error.lower.all.events[t] <- error.upper.all.events[t] <- "no info"
+    
+    next
+  }
+  
+  # Get source name corresponding to largest metric value
+  loc.est.all.events[t] <- source.names[which.max(these.metrics[info.mask])]
+  
   # Get predictions from most likely source and observations during this event
-  event.preds <- sims [[which.max(these.metrics)]][this.mask, ]
-  event.obs   <- obs  [this.mask, ]
-  event.times <- times[this.mask]
+  event.preds <- sims [[which.max(these.metrics[info.mask])]][sub.mask, ]
+  event.obs   <- obs  [sub.mask, ]
+  event.times <- times[sub.mask]
   
   # Vectors to hold preds and obs when both are in a spike
   all.preds.to.compare <- all.obs.to.compare <- c()
   
   # Loop through sensors and save when both obs and preds are in a spike
   for (r in 1:n.r){
-    
     # Get predictions and observations for this sensor
-    these.preds <- event.preds[,r]
-    these.obs <- event.obs[,r]
+    these.preds <- event.preds[, r]
+    these.obs   <- event.obs[, r]
     
+    # If all observations from this sensor is NA, move onto the next sensor
     if (all(is.na(these.obs))){ next }
     
     # Find spikes in both predictions and observations.
@@ -447,13 +485,11 @@ for (t in 1:n.ints){
     
     # If there are any such time steps..
     if (sum(both.in.spike.mask) > 0){
-      
       # Save data to compare
       all.preds.to.compare <- c(all.preds.to.compare, these.preds[both.in.spike.mask])
       all.obs.to.compare   <- c(all.obs.to.compare,   these.obs  [both.in.spike.mask])
     } 
-    
-  } # End loop over sensors
+  } # End loop through sensors
   
   # If there is enough data to compare, compute rate estimate and 
   # percent difference between obs and preds (will be used for UQ)
@@ -461,23 +497,20 @@ for (t in 1:n.ints){
     
     # Save obs and preds so that we can check that they are on the same order of magnitude later
     all.preds.to.compare.all.events <- c(all.preds.to.compare.all.events, all.preds.to.compare)
-    all.obs.to.compare.all.events <- c(all.obs.to.compare.all.events, all.obs.to.compare)
-    
-    # Number of times to sample from predictions and observations
-    n.samples <- 1000
+    all.obs.to.compare.all.events   <- c(all.obs.to.compare.all.events,   all.obs.to.compare)
     
     # Vector to hold emission rate estimate for each sample
     q.vals <- vector(length = n.samples)
     
     # Loop through samples
     for (o in 1:n.samples){
-      
       # Sample from predictions and observations
       this.sample <- sample.int(n = length(all.preds.to.compare), 
                                 size = length(all.preds.to.compare)/2,
                                 replace = T)
       
       # --------- OLD GRID SEARCH CODE -------------------------
+      
       # # Define a grid of emission rate values to optimize over
       # q.grid <- lseq(0.0001, 3000, length.out = 2000)
       # 
@@ -502,23 +535,25 @@ for (t in 1:n.ints){
       # } else {
       #   q.vals[o] <- q.grid[which.min(sse)]
       # }
+      
       # --------- END OLD GRID SEARCH CODE ----------------------
       
       # Binary search code written by Troy Sorensen. 
-      # Implemented here on June 11, 2025.
+      # Implemented here on June 11, 2025. 
+      
       # ------------ NEW BINARY SEARCH CODE ---------------------
       preds_s <- all.preds.to.compare[this.sample]
       obs_s   <- all.obs.to.compare[this.sample]
-
+      
       # Set bounds for search (grid search had 0 to 3000 on a logarithmic grid)
       q_low  <- 0
       q_high <- 3000
       tol    <- 1e-3
-
+      
       # Check derivative of upper and lower bounds of the search range
       deriv_low  <- sum(preds_s * (obs_s - q_low    * preds_s))
       deriv_high <- sum(preds_s * (obs_s - q_high * preds_s))
-
+      
       if (all(preds_s == 0)) {
         # If all predictions are zero, no slope: cannot estimate q, set to NA
         q.vals[o] <- NA
@@ -531,10 +566,10 @@ for (t in 1:n.ints){
         # Stop when abs(deriv) < tol or 50 iterations are performed, whichever occurs first.
         for (iter in 1:50) {
           q_mid <- (q_low + q_high) / 2
-
+          
           # derivative of SSE(q) w.r.t. q is sum(preds * (obs - q*preds))
           deriv <- sum(preds_s * (obs_s - q_mid * preds_s), na.rm = TRUE)
-
+          
           if (is.na(deriv)) {
             q_mid <- NA
             break
@@ -549,18 +584,29 @@ for (t in 1:n.ints){
             q_high <- q_mid
           }
         }
-
+        
         q.vals[o] <- q_mid
       }
       # ------------ END BINARY SEARCH CODE ---------------------
       
     } # End loop through samples
     
+    # Note: 3.6 multiplier converts from g/s to kg/hr
+    q.vals <- q.vals * 3.6
+    
     # Save mean of sampled emission rates and the 5th and 95th percentiles
-    # Note: 3600 multiplier converts from g/s to g/hr
-    rate.est.all.events[t] <- mean(q.vals, na.rm = T) * 3600
-    error.lower.all.events[t] <- quantile(q.vals, probs = 0.05, na.rm = T) * 3600
-    error.upper.all.events[t] <- quantile(q.vals, probs = 0.95, na.rm = T) * 3600
+    q.hat[which(info.mask)[which.max(these.metrics[info.mask])]] <- 
+      rate.est.all.events[t] <- mean(q.vals, na.rm = TRUE)
+    q.hat.lower[which(info.mask)[which.max(these.metrics[info.mask])]] <- 
+      error.lower.all.events[t] <- quantile(q.vals, probs = 0.05, na.rm = T)
+    q.hat.upper[which(info.mask)[which.max(these.metrics[info.mask])]] <- 
+      error.upper.all.events[t] <- quantile(q.vals, probs = 0.95, na.rm = T)
+    
+    # Leaning into the single source assumption, set the 
+    # emission rate for all other potential sources to 0
+    q.hat[q.hat == "FALSE"] <- 0
+    q.hat.lower[q.hat.lower == "FALSE"] <- 0
+    q.hat.upper[q.hat.upper == "FALSE"] <- 0
     
     # If there are not enough time steps in which both observations and
     # predictions are in a spike, then do not estimate a rate.
@@ -569,28 +615,43 @@ for (t in 1:n.ints){
     # happening, but when we don't have enough alignment between simulation and 
     # observations to estimate an emission rate.
   } else {
-    
     # No concentration enhancements, likely that no emissions are happening, so set rate to 0
-    if (all(max.obs[this.mask] == 0)) {
-      
-      rate.est.all.events[t]  <- 0
+    if (all(max.obs[sub.mask] == 0)) {
+      rate.est.all.events[t]    <- 0
       error.lower.all.events[t] <- 0
       error.upper.all.events[t] <- 0
       
-      # Emissions could be happening, but not enough alignment to quantify
+      q.hat[q.hat == "FALSE"] <- 0
+      q.hat.lower[q.hat.lower == "FALSE"] <- 0
+      q.hat.upper[q.hat.upper == "FALSE"] <- 0
+      q.vals <- rep(0, n.samples)
+      # Emissions could be happening, but not enough overlap to quantify
     } else {
-      rate.est.all.events[t]  <- NA
-      error.lower.all.events[t] <- NA
-      error.upper.all.events[t] <- NA
+      rate.est.all.events[t]    <- "no overlap"
+      error.lower.all.events[t] <- "no overlap"
+      error.upper.all.events[t] <- "no overlap"
+      
+      q.hat[q.hat == "FALSE"] <- "no overlap"
+      q.hat.lower[q.hat.lower == "FALSE"] <- "no overlap"
+      q.hat.upper[q.hat.upper == "FALSE"] <- "no overlap"
+      q.vals <- "no overlap"
     }
   }
+  
+  # Save output
+  out <- list(q.hat = q.hat,
+              q.hat.lower = q.hat.lower, 
+              q.hat.upper = q.hat.upper,
+              rates = q.vals)
+  big.out[[t]] <- out
+  
 } # End loop through events
 
 # Check that predictions and observations are on the same order of magnitude
 med.p <- median(all.preds.to.compare.all.events, na.rm = T)
 med.o <- median(all.obs.to.compare.all.events,   na.rm = T)
 
-if ( med.p > med.o * 10 & med.p < med.o / 10 ){
+if (med.p > med.o * 10 & med.p < med.o / 10){
   if (med.p > med.o){
     print("WARNING: Simulation output and observations are on different order, recommend re-simulating with smaller rate")
   } else {
@@ -598,17 +659,18 @@ if ( med.p > med.o * 10 & med.p < med.o / 10 ){
   }
 }
 
-# Package up event detection, localization, and quantification results
-to.save <- list(event.mask = spikes,
-                max.obs = max.obs,
-                localization.estimates = loc.est.all.events,
-                rate.estimates = rate.est.all.events,
-                error.lower = error.lower.all.events,
-                error.upper = error.upper.all.events,
-                source.names = source.names,
-                WD = data$WD,
-                WS = data$WS)
+# Package up DLQ results
+to.save <- c(list(event.mask = spikes,
+                  max.obs = max.obs,
+                  localization.estimates = loc.est.all.events,
+                  rate.estimates = rate.est.all.events,
+                  error.lower = error.lower.all.events,
+                  error.upper = error.upper.all.events,
+                  source.names = source.names,
+                  WD = data$WD,
+                  WS = data$WS, 
+                  out = big.out),
+             sims)
 
 # Save results
 saveRDS(to.save, output.file.path)
-
