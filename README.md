@@ -1,6 +1,6 @@
-# Detection, localization, and quantification (DLQ) using continuous monitoring systems (CMS)
+## Detection, localization, and quantification (DLQ) using continuous monitoring systems (CMS)
 
-## Overview
+### Overview
 
 This repository contains code to estimate methane emission start and end time (detection), source location (localization), and emission rate (quantification) using concentration data from point-in-space continuous monitoring systems. The code is separated into two main scripts located in the `code` directory: `MAIN_1_simulate` runs the Gaussian puff atmospheric dispersion model, and `MAIN_2_DLQ` uses output from the Gaussian puff model to perform DLQ. The HELPER scripts contain auxiliary functions used in the `MAIN_1` and `MAIN_2` scripts.
 
@@ -8,15 +8,11 @@ Inputs and parameters of the DLQ model are controlled using two configuration fi
 
 The `input_data` directory contains sensor and source locations from the ADED experiment discussed in Daniels et al. 2024. The `output_data` directory is where output from the `MAIN_1` and `MAIN_2` scripts is saved. Output files have been pre-generated and are saved in these directories. The raw concentration data used to generate the output files cannot be made publicly available due to privacy concerns, but can be made available upon request for research purposes.
 
-## Citation
-
-## Citation
+### Citation
 
 If you use this code in your research, please cite the accompanying paper:
 
-```text
-Daniels et al. (2024). *Detection, localization, and quantification of single-source methane emissions on oil and gas production sites using point-in-space continuous monitoring systems*. Elementa: Science of the Anthropocene. https://doi.org/10.1525/elementa.2023.00110
-```
+Daniels et al. (2024). Detection, localization, and quantification of single-source methane emissions on oil and gas production sites using point-in-space continuous monitoring systems. *Elementa: Science of the Anthropocene*. https://doi.org/10.1525/elementa.2023.00110
 
 BibTeX:
 ```bibtex
@@ -24,7 +20,6 @@ BibTeX:
 	title = {Detection, localization, and quantification of single-source methane emissions on oil and gas production sites using point-in-space continuous monitoring systems},
 	volume = {12},
 	issn = {2325-1026},
-	url = {https://doi.org/10.1525/elementa.2023.00110},
 	doi = {10.1525/elementa.2023.00110},
 	number = {1},
 	urldate = {2024-07-31},
