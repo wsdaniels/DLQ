@@ -6,7 +6,7 @@ This repository contains code to estimate methane emission start and end time (d
 
 Inputs and parameters of the DLQ model are controlled using two configuration files found in the `input_data` directory. The `simulation_config.txt` file controls input for the `MAIN_1` script and the `DLQ_config.txt` file controls input for the `MAIN_2` script. A README file is provided for each config file in the `input_data` directory. The `MAIN_3` script generates all results and figures for the accompanying manuscript (Daniels et al. 2024): https://doi.org/10.1525/elementa.2023.00110
 
-The `input_data` directory contains sensor and source locations from the ADED experiment discussed in Daniels et al. 2024. The `output_data` directory is where output from the `MAIN_1` and `MAIN_2` scripts is saved. Output files have been pre-generated and are saved in these directories. The raw concentration data used to generate the output files cannot be made publicly available due to privacy concerns, but can be made available upon request for research purposes.
+The `input_data` directory contains sensor and source locations from the controlled release experiment discussed in the accompanying manuscript, as well as a sample of the concentration and wind measurements from the CMS sensors. Only a sample of these data can be provided publicly due to the proprietary nature of the CMS sensor technology used in this study. The full concentration data can be made available upon request for research purposes. The `output_data` directory is where output files from the `MAIN_1` and `MAIN_2` scripts are saved. Output files have been pre-generated for both the sample input files and the full input files (which cannot be shared publicly) and are saved in this directory. 
 
 ### Citation
 
