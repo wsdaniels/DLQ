@@ -23,7 +23,7 @@ if (commandArgs()[1] == "RStudio"){
 #---------------------------------------------------------------------------
 
 # Directory to save plots
-save.dir <- '../'
+save.dir <- '../figures/'
 
 # Path to event detection, localization, quantification results
 data.path <- '../output_data/DLQ_output.RData'
@@ -40,10 +40,6 @@ wellhead.west.color <- "#C7383C" #red
 
 # END OF USER INPUT - NO MODIFICATION NECESSARY BELOW THIS POINT
 #---------------------------------------------------------------------------
-
-
-
-
 
 
 # STEP 1: PARSE OUT RESULTS
@@ -180,7 +176,7 @@ for (i in 1:length(event.nums)){
   these.times <- events$time[this.spike]
   
   # Loop through multisource leaks
-  for (j in 1:nrow(multisource.leaks)){
+  for (j in seq_len(nrow(multisource.leaks))){
     
     leak.start <- multisource.leaks$tc_ExpStartDatetime[j]
     leak.stop  <- multisource.leaks$tc_ExpEndDatetime[j]
@@ -559,9 +555,9 @@ for (l in which(identified.leaks)){
   
   # Get true METEC emission rate (plus uncertainty) and average of predicted rates during this METEC emission
   event.ind <- which(overlap.matrix[l, ])
-  true.rate <- singlesource.leaks$tc_C1MassFlow[l]
+  true.rate <- singlesource.leaks$tc_C1MassFlow[l]/1000
   rate.est <- mean(rate.est.all.events[event.ind], na.rm = T)
-  true.rate.uncertainty <- singlesource.leaks$tc_C1MassFlowUncertainty[l]
+  true.rate.uncertainty <- singlesource.leaks$tc_C1MassFlowUncertainty[l]/1000
   
   # Save true rate, estimated rate, ratio of estimate to truth, and truth uncertainty
   true.rates.identified.events[count] <- true.rate
@@ -654,11 +650,11 @@ for (i in 1:(length(plot.divs)-1)){
        ybottom = 0, ytop = singlesource.leaks$tc_C1MassFlow/1000,
        col = alpha(true.rate.cols, 1))
   
-  points(event.mid.times, rate.est.all.events/1000, pch = 19)
+  points(event.mid.times, rate.est.all.events, pch = 19)
   
   segments(x0 = event.mid.times, 
-           y0 = error.lower.all.events/1000,
-           y1 = error.upper.all.events/1000,
+           y0 = error.lower.all.events,
+           y1 = error.upper.all.events,
            lwd = 2)
   
   if (i == length(plot.divs)-1){
@@ -730,8 +726,8 @@ rate.est.non.identified.events.pch[singlesource.leaks$tc_EquipmentGroupID[!ident
 rate.est.non.identified.events.pch[singlesource.leaks$tc_EquipmentGroupID[!identified.leaks] == "Wellhead.East"] <- wellhead.east.pch
 rate.est.non.identified.events.pch[singlesource.leaks$tc_EquipmentGroupID[!identified.leaks] == "Separator.East"] <- separator.east.pch
 
-y <- rate.est.identified.events/1000
-x <- true.rates.identified.events/1000
+y <- rate.est.identified.events
+x <- true.rates.identified.events
 
 this.fit <- lm(y ~ x + 0)
 
@@ -770,7 +766,7 @@ no.rate.est.y <- -no.rate.factor*axis.max
 
 ################################################ START ZOOM OUT PLOT
 
-plot(true.rates.identified.events/1000, rate.est.identified.events/1000, 
+plot(true.rates.identified.events, rate.est.identified.events, 
      asp = 1, 
      pch = rate.est.identified.events.pch, 
      col = rate.est.identified.events.cols,
@@ -782,36 +778,36 @@ plot(true.rates.identified.events/1000, rate.est.identified.events/1000,
 segments(x0 = 0, y0 = 0, x1 = 20, y1 = 0, lwd = 3, col = "grey55") # false negative
 segments(x0 = 0, y0 = 0, x1 = 0, y1 = 20, lwd = 3, col = "grey55") # false positive
 
-points(true.rates.identified.events/1000, rate.est.identified.events/1000, 
+points(true.rates.identified.events, rate.est.identified.events, 
        asp = 1, 
        pch = rate.est.identified.events.pch, 
        col = rate.est.identified.events.cols,
        bg = rate.est.identified.events.cols)
 
-points(rep(0, n.false.positives), rate.est.all.events[false.positives]/1000,
+points(rep(0, n.false.positives), rate.est.all.events[false.positives],
        pch = '*', col= "black", cex = 2)
 
-points(non.identified.leaks/1000, rep(0, n.non.identified.leaks),
+points(non.identified.leaks, rep(0, n.non.identified.leaks),
        col = rate.est.non.identified.events.cols,
        bg = rate.est.non.identified.events.cols,
        pch = rate.est.non.identified.events.pch)
 
-segments(x0 = true.rates.identified.events/1000,
-         y0 = pmax(0,error.lower.identified.events/1000),
-         y1 = error.upper.identified.events/1000,
+segments(x0 = true.rates.identified.events,
+         y0 = pmax(0,error.lower.identified.events),
+         y1 = error.upper.identified.events,
          col = alpha(rate.est.identified.events.cols, 0.5),
          lwd = 2)
 
-segments(x0 = true.rates.identified.events/1000 - true.rate.uncertainty.identified.events/1000,
-         x1 = true.rates.identified.events/1000 + true.rate.uncertainty.identified.events/1000,
-         y0 = rate.est.identified.events/1000,
+segments(x0 = true.rates.identified.events - true.rate.uncertainty.identified.events,
+         x1 = true.rates.identified.events + true.rate.uncertainty.identified.events,
+         y0 = rate.est.identified.events,
          col = alpha(rate.est.identified.events.cols, 0.5),
          lwd = 2)
 
 segments(x0 = 0, y0 = no.rate.est.y, x1 = 20, y1 = no.rate.est.y, lwd = 3,
          lty = 4, col = "gray55")
 
-points(true.rates.identified.events[no.rate.est.mask]/1000, rep(no.rate.est.y, sum(no.rate.est.mask)),
+points(true.rates.identified.events[no.rate.est.mask], rep(no.rate.est.y, sum(no.rate.est.mask)),
        col = rate.est.identified.events.cols[no.rate.est.mask],
        pch = rate.est.identified.events.pch[no.rate.est.mask],
        bg = rate.est.identified.events.cols[no.rate.est.mask])
@@ -850,7 +846,7 @@ mtext("Estimated Emission Rate [kg/hr]", side = 2, outer = T, line = 0.5)
 
 no.rate.est.y <- -no.rate.factor*zoom.in
 
-plot(true.rates.identified.events/1000, rate.est.identified.events/1000, 
+plot(true.rates.identified.events, rate.est.identified.events, 
      asp = 1, las = 1,
      col = rate.est.identified.events.cols,
      bg = rate.est.identified.events.cols,
@@ -864,34 +860,34 @@ box(col = "black", lwd = 4)
 segments(x0 = 0, y0 = 0, x1 = 20, y1 = 0, lwd = 3, col = "grey55") # false negative
 segments(x0 = 0, y0 = 0, x1 = 0, y1 = 20, lwd = 3, col = "grey55") # false positive
 
-points(true.rates.identified.events/1000, rate.est.identified.events/1000, 
+points(true.rates.identified.events, rate.est.identified.events, 
        col = rate.est.identified.events.cols,
        bg = rate.est.identified.events.cols,
        pch = rate.est.identified.events.pch)
 
-points(rep(0, n.false.positives), rate.est.all.events[false.positives]/1000,
+points(rep(0, n.false.positives), rate.est.all.events[false.positives],
        pch = '*', col= "black", cex = 2)
 
-points(non.identified.leaks/1000, rep(0, n.non.identified.leaks),
+points(non.identified.leaks, rep(0, n.non.identified.leaks),
        col = rate.est.non.identified.events.cols,
        pch = 19)
 
-segments(x0 = true.rates.identified.events/1000,
-         y0 = pmax(0,error.lower.identified.events)/1000,
-         y1 = error.upper.identified.events/1000,
+segments(x0 = true.rates.identified.events,
+         y0 = pmax(0,error.lower.identified.events),
+         y1 = error.upper.identified.events,
          col = alpha(rate.est.identified.events.cols, 0.5),
          lwd = 2)
 
-segments(x0 = pmax(0,true.rates.identified.events/1000 - true.rate.uncertainty.identified.events/1000),
-         x1 = true.rates.identified.events/1000 + true.rate.uncertainty.identified.events/1000,
-         y0 = rate.est.identified.events/1000,
+segments(x0 = pmax(0,true.rates.identified.events - true.rate.uncertainty.identified.events),
+         x1 = true.rates.identified.events + true.rate.uncertainty.identified.events,
+         y0 = rate.est.identified.events,
          col = alpha(rate.est.identified.events.cols, 0.5),
          lwd = 2)
 
 segments(x0 = 0, y0 = no.rate.est.y, x1 = 20, y1 = no.rate.est.y, lwd = 3,
          lty = 4, col = "gray55")
 
-points(true.rates.identified.events[no.rate.est.mask]/1000, rep(no.rate.est.y, sum(no.rate.est.mask)),
+points(true.rates.identified.events[no.rate.est.mask], rep(no.rate.est.y, sum(no.rate.est.mask)),
        col = rate.est.identified.events.cols[no.rate.est.mask],
        pch = rate.est.identified.events.pch[no.rate.est.mask],
        bg = rate.est.identified.events.cols[no.rate.est.mask])
@@ -929,11 +925,11 @@ for (i in 1:length(this.seq)){
   to.save.all[i] <- sum(rate.est.ratios > 1/this.seq[i] & rate.est.ratios < this.seq[i], na.rm = T) / sum(!is.na(rate.est.ratios))
   
   # Save number of emissions > 1kg/hr that have a ratio less than this factor
-  this.mask <- true.rates.identified.events > 1000
+  this.mask <- true.rates.identified.events > 1
   to.save.big[i] <- sum(rate.est.ratios[this.mask] > 1/this.seq[i] & rate.est.ratios[this.mask] < this.seq[i], na.rm = T) / sum(!is.na(rate.est.ratios[this.mask]))
   
   # Save number of emissions < 1kg/hr that have a ratio less than this factor
-  this.mask <- true.rates.identified.events <= 1000
+  this.mask <- true.rates.identified.events <= 1
   to.save.small[i] <- sum(rate.est.ratios[this.mask] > 1/this.seq[i] & rate.est.ratios[this.mask] < this.seq[i], na.rm = T) / sum(!is.na(rate.est.ratios[this.mask]))
 }
 
@@ -965,192 +961,192 @@ axis.cex <- 0.82
 label.line <- 1.8
 
 
-
-
-png(paste0(save.dir, "over_under_est.png"),
-    res = 100, pointsize = 24, width = 1920, height = 800)
-
-par(mfrow= c(1,2))
-par(mgp = c(2, 0.55, 0))
-par(mar = c(1,0.5,1,0.5))
-par(oma = c(2,2.5,2,0))
-
-################################################ START < 1KG/HR HISTOGRAM
-
-this.mask <- true.rates.identified.events <= 1000
-
-rates.to.use <- rate.est.ratios[this.mask]
-
-sum(rates.to.use > 1/2 & rates.to.use < 2, na.rm = T) / sum(!is.na(rates.to.use))
-sum(rates.to.use > 1/3 & rates.to.use < 3, na.rm = T) / sum(!is.na(rates.to.use))
-
-under.est.mask <- rates.to.use <= 1
-under.est.mask[is.na(under.est.mask)] <- F
-
-rates.to.use[under.est.mask] <- 1/rates.to.use[under.est.mask]
-
-rates.to.plot <- rates.to.use
-rates.to.plot[under.est.mask] <- -rates.to.plot[under.est.mask]
-
-rates.to.plot[under.est.mask] <- rates.to.plot[under.est.mask] + 1
-rates.to.plot[!under.est.mask] <- rates.to.plot[!under.est.mask] - 1
-
-
-percent.of.events <- seq(1,100,1)/100
-
-lower <- upper <- vector(length = length(percent.of.events))
-
-for (i in 1:length(percent.of.events)){
-  
-  this.quant <- quantile(rates.to.plot, probs = c(0.5-percent.of.events[i]/2, 0.5+percent.of.events[i]/2), na.rm = T)
-  
-  lower[i] <- this.quant[1]
-  upper[i] <- this.quant[2]
-}
-
-
-
-hist(rates.to.plot, breaks=seq(-6,6,1), col=over.est.col, xaxt = "n", xlab = "", 
-     ylab = "", xpd = NA, ylim = c(-0.25,16.5), yaxt = "n", main = "")
-
-mtext("Number of Emission Events", side = 2, line = label.line)
-
-box()
-
-abline(v = c(lower[50], upper[50]),
-       col = line.col, lwd = lwd.val, lty = 1)
-
-abline(v = c(lower[75], upper[75]),
-       col = line.col, lwd = lwd.val, lty = 2)
-
-abline(v = c(lower[90], upper[90]),
-       col = line.col, lwd = lwd.val, lty = 3)
-
-round(c(100*((-1/(lower[50]-1))-1), 100*(upper[50]+1-1)), 1)
-round(c(100*((-1/(lower[75]-1))-1), 100*(upper[75]+1-1)), 1)
-round(c(100*((-1/(lower[90]-1))-1), 100*(upper[90]+1-1)), 1)
-
-round(c(lower[50]-1, upper[50]+1), 1)
-round(c(lower[75]-1, upper[75]+1), 1)
-round(c(lower[90]-1, upper[90]+1), 1)
-
-tmp <- median(rates.to.plot,na.rm=T)
-small.median.fd <- ifelse(tmp < 0, tmp-1, tmp+1)
-print(round(small.median.fd, 2))
-
-small.median.pd <- 100*ifelse(small.median.fd < 0, (-1/small.median.fd) - 1, small.median.fd)
-print(round(small.median.pd, 1))
-
-hist(rates.to.plot[under.est.mask], breaks=seq(-8,8,1), col=under.est.col, add=TRUE, main = "")
-hist(rates.to.plot[!under.est.mask], breaks=seq(-8,8,1), col=over.est.col, add=TRUE, main = "")
-
-segments(x0=median(rates.to.plot,na.rm=T), y0 = 0, y1 = 13, col = "#FB514B", lwd = lwd.val+2)
-
-axis.factors <- c(-9:-2, 1:9)
-converted.axis.factors <- ifelse(axis.factors < 0, -1/axis.factors, axis.factors)
-axis.pdiff <- round(100 * (converted.axis.factors-1), 0)
-
-axis(side = 1, at = seq(-8,8,1), labels = axis.factors, cex.axis = axis.cex)
-axis(side = 2, at = seq(0,16,2), cex.axis = axis.cex)
-axis(side = 3, at = seq(-8,8,2), labels = paste0(axis.pdiff[seq(1,length(axis.pdiff),2)],"%"), cex.axis = axis.cex)
-
-
-
-################################################ START > 1KG/HR HISTOGRAM
-
-this.mask <- true.rates.identified.events > 1000
-
-rates.to.use <- rate.est.ratios[this.mask]
-
-sum(rates.to.use > 1/2 & rates.to.use < 2, na.rm = T) / sum(!is.na(rates.to.use))
-sum(rates.to.use > 1/3 & rates.to.use < 3, na.rm = T) / sum(!is.na(rates.to.use))
-
-under.est.mask <- rates.to.use <= 1
-under.est.mask[is.na(under.est.mask)] <- F
-
-rates.to.use[under.est.mask] <- 1/rates.to.use[under.est.mask]
-
-rates.to.plot <- rates.to.use
-rates.to.plot[under.est.mask] <- -rates.to.plot[under.est.mask]
-
-rates.to.plot[under.est.mask] <- rates.to.plot[under.est.mask] + 1
-rates.to.plot[!under.est.mask] <- rates.to.plot[!under.est.mask] - 1
-
-percent.of.events <- seq(1,100,1)/100
-
-lower <- upper <- vector(length = length(percent.of.events))
-
-for (i in 1:length(percent.of.events)){
-  
-  this.quant <- quantile(rates.to.plot, probs = c(0.5-percent.of.events[i]/2, 0.5+percent.of.events[i]/2), na.rm = T)
-  
-  lower[i] <- this.quant[1]
-  upper[i] <- this.quant[2]
-}
-
-
-
-hist(rates.to.plot, breaks=seq(-8,8,0.25), col=over.est.col, xaxt = "n", xlab = "", 
-     ylab = "", xlim = c(-2,2),
-     ylim = c(-0.25,16.5), yaxt = "n", main = "")
-
-box()
-
-abline(v = c(lower[50], upper[50]),
-       col = line.col, lwd = lwd.val, lty = 1)
-
-abline(v = c(lower[75], upper[75]),
-       col = line.col, lwd = lwd.val, lty = 2)
-
-abline(v = c(lower[90], upper[90]),
-       col = line.col, lwd = lwd.val, lty = 3)
-
-
-round(c(100*((-1/(lower[50]-1))-1), 100*(upper[50]+1-1)), 1)
-round(c(100*((-1/(lower[75]-1))-1), 100*(upper[75]+1-1)), 1)
-round(c(100*((-1/(lower[90]-1))-1), 100*(upper[90]+1-1)), 1)
-
-round(c(lower[50]-1, upper[50]+1), 1)
-round(c(lower[75]-1, upper[75]+1), 1)
-round(c(lower[90]-1, upper[90]+1), 1)
-
-
-tmp <- median(rates.to.plot,na.rm=T)
-big.median.fd <- ifelse(tmp < 0, tmp-1, tmp+1)
-print(round(big.median.fd, 2))
-
-big.median.pd <- 100*ifelse(big.median.fd < 0, (-1/big.median.fd) - 1, big.median.fd - 1)
-print(round(big.median.pd, 1))
-
-
-hist(rates.to.plot[under.est.mask], breaks=seq(-8,8,0.25), col=under.est.col, add=TRUE, main = "")
-hist(rates.to.plot[!under.est.mask], breaks=seq(-8,8,0.25), col=over.est.col, add=TRUE, main = "")
-
-segments(x0=median(rates.to.plot,na.rm=T), y0 = 0, y1 = 15, col = "#FB514B", lwd = lwd.val+2)
-
-
-axis.factors <- c(seq(-3,-1.5,0.5), seq(1,3,0.5))
-converted.axis.factors <- ifelse(axis.factors < 0, -1/axis.factors, axis.factors)
-axis.pdiff <- round(100 * (converted.axis.factors-1), 0)
-
-axis(side = 1, at = seq(-2,2,0.5), labels = axis.factors, cex.axis = axis.cex)
-axis(side = 3, at = seq(-2,2,0.5), labels = paste0(axis.pdiff, "%"), cex.axis = axis.cex)
-
-
-# legend("right", inset = c(0.1,0),
-#        legend = c("Contains 50% of estimates",
-#                   "Contains 75% of estimates",
-#                   "Contains 90% of estimates",
-#                   "Median factor difference"),
-#        col = c(line.col, line.col, line.col, "#FB514B"),
-#        lwd = 4, lty = c(1,2,3))
-
-dev.off()
-
-
-sum(rate.est.ratios >= 1/2 & rate.est.ratios <= 2, na.rm = T) / sum(!is.na(rate.est.ratios))
-sum(rate.est.ratios >= 1/3 & rate.est.ratios <= 3, na.rm = T) / sum(!is.na(rate.est.ratios))
-
+# 
+# 
+# png(paste0(save.dir, "over_under_est.png"),
+#     res = 100, pointsize = 24, width = 1920, height = 800)
+# 
+# par(mfrow= c(1,2))
+# par(mgp = c(2, 0.55, 0))
+# par(mar = c(1,0.5,1,0.5))
+# par(oma = c(2,2.5,2,0))
+# 
+# ################################################ START < 1KG/HR HISTOGRAM
+# 
+# this.mask <- true.rates.identified.events <= 1
+# 
+# rates.to.use <- rate.est.ratios[this.mask]
+# 
+# sum(rates.to.use > 1/2 & rates.to.use < 2, na.rm = T) / sum(!is.na(rates.to.use))
+# sum(rates.to.use > 1/3 & rates.to.use < 3, na.rm = T) / sum(!is.na(rates.to.use))
+# 
+# under.est.mask <- rates.to.use <= 1
+# under.est.mask[is.na(under.est.mask)] <- F
+# 
+# rates.to.use[under.est.mask] <- 1/rates.to.use[under.est.mask]
+# 
+# rates.to.plot <- rates.to.use
+# rates.to.plot[under.est.mask] <- -rates.to.plot[under.est.mask]
+# 
+# rates.to.plot[under.est.mask] <- rates.to.plot[under.est.mask] + 1
+# rates.to.plot[!under.est.mask] <- rates.to.plot[!under.est.mask] - 1
+# 
+# 
+# percent.of.events <- seq(1,100,1)/100
+# 
+# lower <- upper <- vector(length = length(percent.of.events))
+# 
+# for (i in 1:length(percent.of.events)){
+#   
+#   this.quant <- quantile(rates.to.plot, probs = c(0.5-percent.of.events[i]/2, 0.5+percent.of.events[i]/2), na.rm = T)
+#   
+#   lower[i] <- this.quant[1]
+#   upper[i] <- this.quant[2]
+# }
+# 
+# 
+# 
+# hist(rates.to.plot, breaks=seq(-6,6,1), col=over.est.col, xaxt = "n", xlab = "", 
+#      ylab = "", xpd = NA, ylim = c(-0.25,16.5), yaxt = "n", main = "")
+# 
+# mtext("Number of Emission Events", side = 2, line = label.line)
+# 
+# box()
+# 
+# abline(v = c(lower[50], upper[50]),
+#        col = line.col, lwd = lwd.val, lty = 1)
+# 
+# abline(v = c(lower[75], upper[75]),
+#        col = line.col, lwd = lwd.val, lty = 2)
+# 
+# abline(v = c(lower[90], upper[90]),
+#        col = line.col, lwd = lwd.val, lty = 3)
+# 
+# round(c(100*((-1/(lower[50]-1))-1), 100*(upper[50]+1-1)), 1)
+# round(c(100*((-1/(lower[75]-1))-1), 100*(upper[75]+1-1)), 1)
+# round(c(100*((-1/(lower[90]-1))-1), 100*(upper[90]+1-1)), 1)
+# 
+# round(c(lower[50]-1, upper[50]+1), 1)
+# round(c(lower[75]-1, upper[75]+1), 1)
+# round(c(lower[90]-1, upper[90]+1), 1)
+# 
+# tmp <- median(rates.to.plot,na.rm=T)
+# small.median.fd <- ifelse(tmp < 0, tmp-1, tmp+1)
+# print(round(small.median.fd, 2))
+# 
+# small.median.pd <- 100*ifelse(small.median.fd < 0, (-1/small.median.fd) - 1, small.median.fd)
+# print(round(small.median.pd, 1))
+# 
+# hist(rates.to.plot[under.est.mask], breaks=seq(-8,8,1), col=under.est.col, add=TRUE, main = "")
+# hist(rates.to.plot[!under.est.mask], breaks=seq(-8,8,1), col=over.est.col, add=TRUE, main = "")
+# 
+# segments(x0=median(rates.to.plot,na.rm=T), y0 = 0, y1 = 13, col = "#FB514B", lwd = lwd.val+2)
+# 
+# axis.factors <- c(-9:-2, 1:9)
+# converted.axis.factors <- ifelse(axis.factors < 0, -1/axis.factors, axis.factors)
+# axis.pdiff <- round(100 * (converted.axis.factors-1), 0)
+# 
+# axis(side = 1, at = seq(-8,8,1), labels = axis.factors, cex.axis = axis.cex)
+# axis(side = 2, at = seq(0,16,2), cex.axis = axis.cex)
+# axis(side = 3, at = seq(-8,8,2), labels = paste0(axis.pdiff[seq(1,length(axis.pdiff),2)],"%"), cex.axis = axis.cex)
+# 
+# 
+# 
+# ################################################ START > 1KG/HR HISTOGRAM
+# 
+# this.mask <- true.rates.identified.events > 1
+# 
+# rates.to.use <- rate.est.ratios[this.mask]
+# 
+# sum(rates.to.use > 1/2 & rates.to.use < 2, na.rm = T) / sum(!is.na(rates.to.use))
+# sum(rates.to.use > 1/3 & rates.to.use < 3, na.rm = T) / sum(!is.na(rates.to.use))
+# 
+# under.est.mask <- rates.to.use <= 1
+# under.est.mask[is.na(under.est.mask)] <- F
+# 
+# rates.to.use[under.est.mask] <- 1/rates.to.use[under.est.mask]
+# 
+# rates.to.plot <- rates.to.use
+# rates.to.plot[under.est.mask] <- -rates.to.plot[under.est.mask]
+# 
+# rates.to.plot[under.est.mask] <- rates.to.plot[under.est.mask] + 1
+# rates.to.plot[!under.est.mask] <- rates.to.plot[!under.est.mask] - 1
+# 
+# percent.of.events <- seq(1,100,1)/100
+# 
+# lower <- upper <- vector(length = length(percent.of.events))
+# 
+# for (i in 1:length(percent.of.events)){
+#   
+#   this.quant <- quantile(rates.to.plot, probs = c(0.5-percent.of.events[i]/2, 0.5+percent.of.events[i]/2), na.rm = T)
+#   
+#   lower[i] <- this.quant[1]
+#   upper[i] <- this.quant[2]
+# }
+# 
+# 
+# 
+# hist(rates.to.plot, breaks=seq(-8,8,0.25), col=over.est.col, xaxt = "n", xlab = "", 
+#      ylab = "", xlim = c(-2,2),
+#      ylim = c(-0.25,16.5), yaxt = "n", main = "")
+# 
+# box()
+# 
+# abline(v = c(lower[50], upper[50]),
+#        col = line.col, lwd = lwd.val, lty = 1)
+# 
+# abline(v = c(lower[75], upper[75]),
+#        col = line.col, lwd = lwd.val, lty = 2)
+# 
+# abline(v = c(lower[90], upper[90]),
+#        col = line.col, lwd = lwd.val, lty = 3)
+# 
+# 
+# round(c(100*((-1/(lower[50]-1))-1), 100*(upper[50]+1-1)), 1)
+# round(c(100*((-1/(lower[75]-1))-1), 100*(upper[75]+1-1)), 1)
+# round(c(100*((-1/(lower[90]-1))-1), 100*(upper[90]+1-1)), 1)
+# 
+# round(c(lower[50]-1, upper[50]+1), 1)
+# round(c(lower[75]-1, upper[75]+1), 1)
+# round(c(lower[90]-1, upper[90]+1), 1)
+# 
+# 
+# tmp <- median(rates.to.plot,na.rm=T)
+# big.median.fd <- ifelse(tmp < 0, tmp-1, tmp+1)
+# print(round(big.median.fd, 2))
+# 
+# big.median.pd <- 100*ifelse(big.median.fd < 0, (-1/big.median.fd) - 1, big.median.fd - 1)
+# print(round(big.median.pd, 1))
+# 
+# 
+# hist(rates.to.plot[under.est.mask], breaks=seq(-8,8,0.25), col=under.est.col, add=TRUE, main = "")
+# hist(rates.to.plot[!under.est.mask], breaks=seq(-8,8,0.25), col=over.est.col, add=TRUE, main = "")
+# 
+# segments(x0=median(rates.to.plot,na.rm=T), y0 = 0, y1 = 15, col = "#FB514B", lwd = lwd.val+2)
+# 
+# 
+# axis.factors <- c(seq(-3,-1.5,0.5), seq(1,3,0.5))
+# converted.axis.factors <- ifelse(axis.factors < 0, -1/axis.factors, axis.factors)
+# axis.pdiff <- round(100 * (converted.axis.factors-1), 0)
+# 
+# axis(side = 1, at = seq(-2,2,0.5), labels = axis.factors, cex.axis = axis.cex)
+# axis(side = 3, at = seq(-2,2,0.5), labels = paste0(axis.pdiff, "%"), cex.axis = axis.cex)
+# 
+# 
+# # legend("right", inset = c(0.1,0),
+# #        legend = c("Contains 50% of estimates",
+# #                   "Contains 75% of estimates",
+# #                   "Contains 90% of estimates",
+# #                   "Median factor difference"),
+# #        col = c(line.col, line.col, line.col, "#FB514B"),
+# #        lwd = 4, lty = c(1,2,3))
+# 
+# dev.off()
+# 
+# 
+# sum(rate.est.ratios >= 1/2 & rate.est.ratios <= 2, na.rm = T) / sum(!is.na(rate.est.ratios))
+# sum(rate.est.ratios >= 1/3 & rate.est.ratios <= 3, na.rm = T) / sum(!is.na(rate.est.ratios))
+# 
 
 
 
@@ -1180,7 +1176,7 @@ par(oma = c(2,2.5,2,0))
 
 ################################################ START < 1KG/HR HISTOGRAM
 
-this.mask <- true.rates.identified.events <= 1000
+this.mask <- true.rates.identified.events <= 1
 
 rates.to.plot <- rate.est.pdiffs[this.mask]
 
@@ -1261,7 +1257,7 @@ segments(x0 = small.median.pd, y0 = 0, y1 = 4, col = "#FB514B", lwd = lwd.val+2)
 
 ################################################ START > 1KG/HR HISTOGRAM
 
-this.mask <- true.rates.identified.events > 1000
+this.mask <- true.rates.identified.events > 1
 
 rates.to.plot <- rate.est.pdiffs[this.mask]
 
@@ -1395,7 +1391,7 @@ for (i in 1:n.ints){
   this.mask <- times %in% these.event.times
   
   # Apply rate in kg/hr to vector
-  pred.emission.rate[this.mask] <- rate.est.all.events[i]/1000
+  pred.emission.rate[this.mask] <- rate.est.all.events[i]
 }
 
 
@@ -1442,7 +1438,7 @@ pdiff <- diff / cumsum(true.emissions.kg[this.order])
 lines(true.emission.rate[this.order], diff, col = "#FB514B", lwd = 4)
 
 
- legend("topright", c("Truth", "Estimate", "Difference"),
+legend("topright", c("Truth", "Estimate", "Difference"),
        lty = 1, lwd = 5, col = c("gray25", "gray75", "#FB514B"), bty = "n",
        inset = c(0,0.5))
 
@@ -1578,7 +1574,7 @@ ylim.max <- 7.2
 
 
 # Mask in events with relatively similar emission rates (all less than 1 kg/hr)
-this.mask <- true.rates.identified.events < 1000
+this.mask <- true.rates.identified.events < 1
 
 # Get relative error for these events
 y <- rate.est.ratios[this.mask]
