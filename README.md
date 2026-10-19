@@ -28,6 +28,8 @@ The code here applies DLQ to one month (April 17 to May 16, 2022) of non-blinded
 
 The framework is designed for single-source emissions on production sites of roughly 150 m in diameter with spatially distinct equipment groups, surrounded by enough sensors (approximately 4 to 8) that a plume is likely to reach at least one of them regardless of wind direction. Multisource and off-site emissions are outside its scope; the seven multisource releases in the METEC month are excluded from the evaluation. `MAIN_1_simulate.R` and `MAIN_2_DLQ.R` work for any number of sources and sensors, but `MAIN_3_analyze_results.R` is specific to the METEC experiment.
 
+**Note:** this README was generated with Claude Sonnet 5.5.
+
 ## Repository structure
 
 ```
