@@ -12,7 +12,6 @@ This repository contains the R code and data for the detection, localization, an
 - [Requirements](#requirements)
 - [Usage](#usage)
 - [Applying DLQ to your own data](#applying-dlq-to-your-own-data)
-- [Implementation details](#implementation-details)
 - [Computational notes](#computational-notes)
 - [Troubleshooting](#troubleshooting)
 - [Citation](#citation)
