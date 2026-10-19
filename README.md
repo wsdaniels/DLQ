@@ -27,7 +27,7 @@ The framework has four steps, all described in Section 2.3 of the paper. First, 
 
 The code here applies DLQ to one month (April 17 to May 16, 2022) of non-blinded single-source controlled releases at the Methane Emissions Technology Evaluation Center (METEC) in Fort Collins, Colorado, collected as part of the Advancing Development of Emissions Detection (ADED) program. The releases came from five potential sources (two wellheads, two separators, and a set of tanks) and were measured by eight CMS sensors, three of which also measured wind. In that evaluation, all controlled releases were detected, 82% were localized correctly, and 5.5% of the estimated events were false positives. See the paper for the quantification results.
 
-The framework is designed for single-source emissions on production sites of roughly 150 m in diameter with spatially distinct equipment groups, surrounded by enough sensors (approximately 4 to 8) that a plume is likely to reach at least one of them regardless of wind direction. Multisource and off-site emissions are outside its scope; the seven multisource releases in the METEC month are excluded from the evaluation. Because the evaluation used non-blinded data, it demonstrates feasibility rather than blinded performance. `MAIN_1_simulate.R` and `MAIN_2_DLQ.R` work for any number of sources and sensors, but `MAIN_3_analyze_results.R` is specific to the METEC experiment.
+The framework is designed for single-source emissions on production sites of roughly 150 m in diameter with spatially distinct equipment groups, surrounded by enough sensors (approximately 4 to 8) that a plume is likely to reach at least one of them regardless of wind direction. Multisource and off-site emissions are outside its scope; the seven multisource releases in the METEC month are excluded from the evaluation. `MAIN_1_simulate.R` and `MAIN_2_DLQ.R` work for any number of sources and sensors, but `MAIN_3_analyze_results.R` is specific to the METEC experiment.
 
 ## Repository structure
 
@@ -140,7 +140,7 @@ Both config files contain one `setting=value` pair per line, with no spaces arou
 
 This script reads the CMS observations and the sensor and source locations, and simulates the concentration that a constant emission from each potential source would produce at each sensor, using the Gaussian puff model. Edit `input_data/simulation_config.txt`:
 
-| Setting | Shipped value | Meaning |
+| Setting | Default value | Meaning |
 |---|---|---|
 | `num.cores.to.use` | 7 | Number of cores to parallelize over. Should not exceed the number of cores on your machine. |
 | `dt` | 1 | Simulation time step in seconds: one puff is released every `dt` seconds. `60/dt` must be an even number (for example, `dt` = 1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, or 60). |
@@ -157,7 +157,7 @@ This script reads the CMS observations and the sensor and source locations, and 
 | `output.file.path` | `../output_data/simulation_output_SAMPLE.RData` | Where the simulation output is saved. |
 | `helper.distance.conversions.path`, `helper.gpuff.function.path` | `../code/HELPER_distance_conversions.R`, `../code/HELPER_gpuff_function.R` | Helper files. |
 
-Two points about the settings are easy to miss. First, the `time` column of the observation file is in UTC, whereas `start.time` and `end.time` are interpreted in `tz`. With the shipped settings, the simulation therefore starts at 06:00 UTC on May 9 (midnight local time), not at the beginning of the file, which is why the sample simulation has 9,720 minutes. Second, `MAIN_2_DLQ.R` converts its fitted rates to kg/h assuming that the simulation used 1 g/s. If you change `emission.rate`, multiply the rate estimates from `MAIN_2_DLQ.R` (`rate.estimates`, `error.lower`, `error.upper`, and the `rates` in `out`) by `emission.rate / 0.001`.
+Two points about the settings are easy to miss. First, the `time` column of the observation file is in UTC, whereas `start.time` and `end.time` are interpreted in `tz`. With the default settings, the simulation therefore starts at 06:00 UTC on May 9 (midnight local time), not at the beginning of the file, which is why the sample simulation has 9,720 minutes. Second, `MAIN_2_DLQ.R` converts its fitted rates to kg/h assuming that the simulation used 1 g/s. If you change `emission.rate`, multiply the rate estimates from `MAIN_2_DLQ.R` (`rate.estimates`, `error.lower`, `error.upper`, and the `rates` in `out`) by `emission.rate / 0.001`.
 
 `MAIN_1_simulate.R` is the slowest step in the workflow (see [Computational notes](#computational-notes)). For a quick test, shorten `start.time` and `end.time` to a few minutes and point `output.file.path` somewhere else.
 
@@ -165,7 +165,7 @@ Two points about the settings are easy to miss. First, the `time` column of the 
 
 This script reads the output of `MAIN_1_simulate.R`, removes the background from the observations, detects emission events, and then localizes and quantifies each one. Edit `input_data/DLQ_config.txt`:
 
-| Setting | Shipped value | Meaning |
+| Setting | Default value | Meaning |
 |---|---|---|
 | `gap.time` | 30 | Events separated by `gap.time` minutes or less are combined into one event. |
 | `length.threshold` | 15 | Events shorter than `length.threshold` minutes are discarded. |
@@ -196,7 +196,7 @@ The figures correspond to the paper as follows:
 | `cumulative.png` | Cumulative true and estimated emissions as a function of true emission rate (Section 3; Section S10 of the Supporting Information) |
 | `leaks_1.png` to `leaks_6.png`, `events_1.png` to `events_6.png` | Diagnostic plots of the true releases and of the detected events, in 5-day windows |
 
-The summary statistics are printed to the console, without labels, in the order in which they are computed: the event-level false positive rate, quantiles of the start and end time errors, the minute-by-minute confusion matrix, the fractions of estimates within a factor of 2 and 3 of the true rate, the percent differences for small and large emissions, and the errors in cumulative emissions. With the default settings they match the values reported in Section 3 of the paper (for example, a false positive rate of 5.5%, a true positive rate of 79.9% and true negative rate of 92.5% for the minute-by-minute event detection, and average percent differences of −3.9% for releases of 1 kg/h or less and 4.3% for larger releases).
+The summary statistics are printed to the console, without labels, in the order in which they are computed: the event-level false positive rate, quantiles of the start and end time errors, the minute-by-minute confusion matrix, the fractions of estimates within a factor of 2 and 3 of the true rate, the percent differences for small and large emissions, and the errors in cumulative emissions.
 
 ## Applying DLQ to your own data
 
@@ -208,16 +208,6 @@ The summary statistics are printed to the console, without labels, in the order 
 4. Run `MAIN_1_simulate.R` and then `MAIN_2_DLQ.R`.
 
 A few details of the forward model are specific to the way it was set up for the paper. The Pasquill stability class used for the dispersion parameters is chosen from the wind speed and the time of day, with daytime hard-coded as 07:00 to 18:59 local time, which was set up for summer conditions (`is.day()` in `HELPER_gpuff_function.R`). The time zone `tz` therefore matters. `MAIN_3_analyze_results.R` maps the equipment group IDs in `leak_data.csv` to source names according to the order in which they first appear in that file, so it works only with the METEC data as provided.
-
-## Implementation details
-
-**Background removal (`MAIN_2_DLQ.R`, step 2).** Gaps in the observations are linearly interpolated, except for missing values at the start and end of a sensor's record. For each sensor, the spike detection algorithm in `HELPER_spike_detection_algorithm.R` (`find.spikes()`) flags concentration enhancements. A spike starts when the concentration rises by more than the going-up threshold (0.25 ppm) from one observation to the next and ends when the background-corrected concentration has dropped to the return threshold (5%) of its maximum. Spikes with a background-corrected amplitude below the amplitude threshold are discarded; this is 0.75 ppm for background removal and 1 ppm for the quantification step described below. An additional safeguard ends a spike after a long stretch of nearly constant observations (controlled by `cont.diff.threshold` and `cont.diff.num`, which default to 0.25 ppm and 10 observations). Section S3 of the Supporting Information describes the algorithm in more detail. Spikes that are closer together than `gap.time` minutes are grouped, and the background of each group is the mean of the observations immediately before and after it. After subtracting it, all observations outside spikes are set to zero, as are any negative values.
-
-**Event detection (step 3).** The maximum background-removed concentration across sensors is computed for each minute. Because every observation outside a spike is now zero, any minute with a nonzero value is part of an event. Gaps of `gap.time` minutes or fewer between nonzero minutes are filled, and events shorter than `length.threshold` minutes are discarded. Event start and end times are the first and last minute of the event.
-
-**Localization (steps 4 and 5).** For each event and each potential source, the simulated concentrations at all sensors are stacked into one vector and compared to the stacked vector of background-removed observations using the Pearson correlation. A source is considered to have information about the event only if more than four of its simulated concentrations (counted across all sensors and minutes of the event) exceed 0.25 ppm; otherwise its result is `"no info"`. Among the sources with information, the one with the highest correlation is the localization estimate.
-
-**Quantification (step 5).** The emission rate is estimated using only the time steps in which both the observed and the simulated concentrations at a sensor are in a spike, which reduces the influence of transport model errors. If there are four or fewer such time steps (counted across all sensors), no rate is estimated (`"no overlap"`). Otherwise, the rate is the factor that scales the simulated concentrations (which are for 1 g/s) to minimize the sum of squared errors against the observations, found by a bisection search on its derivative over 0 to 3,000. This is repeated for `n.samples` bootstrap samples, each drawn with replacement from the matched time steps and containing half as many time steps as are available. The rate estimate is the mean of the bootstrap rates, and the interval is their 5th and 95th percentiles. The rates are multiplied by 3.6 to convert from g/s to kg/h. `MAIN_2_DLQ.R` prints a warning if the simulated and observed concentrations differ by more than an order of magnitude in median.
 
 ## Computational notes
 
